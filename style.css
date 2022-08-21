@@ -1,0 +1,74 @@
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+h1 {
+  text-align: center;
+}
+
+h2 {
+  text-align: center;
+  font-weight: 400;
+}
+
+#config {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 2rem;
+}
+
+.form-field {
+  margin: 0.25rem auto;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.form-field label {
+  text-align: right;
+  margin-right: 0.5rem;
+  width: auto;
+  min-width: 7rem;
+}
+
+.form-field input {
+  margin: 0 auto;
+  flex-grow: 1;
+  padding: 0.25rem;
+}
+
+.container {
+  margin: 0 auto;
+  padding: 0.5rem;
+}
+
+.chat-box {
+  border: 1px solid black;
+  width: 0 auto;
+  height: 500px;
+}
+
+.send-box {
+  
+  width: 0 auto;
+  height: 2rem;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.send-box input {
+  border: 1px solid black;
+  flex-grow: 1;
+  margin-right: 0.5rem;
+  padding: 0.25rem; 
+}
+
+.send-box input:active {
+  border: none;
+}
+
+.send-box button {
+  display: block;
+}

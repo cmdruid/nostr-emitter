@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div>
+    <h1>NostrEmitter Demo</h1>
+    <div class="container">
+      <form id="config">
+        <div class="form-field">
+          <label>Relay Address</label>
+          <input name="relayUrl" value="" placeholder="enter relay url ...">
+        </div>
+        <div class="form-field">
+          <label>Topic</label>
+          <input name="topic" value="" placeholder="enter topic ...">
+        </div>
+        <div class="form-field">
+          <label>Filter</label>
+          <input name="filter" value="" placeholder="enter filter json ...">
+        </div>
+        <div class="form-field">
+          <label>Shared Key</label>
+          <input name="sharedKey" value="" placeholder="enter shared key ...">
+        </div>
+        <button type="submit">Connect</button>
+      </form>
+    </div>
+    <div class="container">
+      <h2>Messages</h2>
+      <div class="chat-box">
+      </div>
+    </div>
+    <div class="container">
+      <form class="send-box">
+        <input name="message" value="" placeholder="type here ...">
+        <button id="send-button" type="submit">Send</button>
+      </form> 
+    </div>
+  </div>
+  <script src='https://bundle.run/noble-secp256k1@1.2.14'></script>
+  <script src="https://bitcoincore.tech/apps/bitcoinjs-ui/lib/bitcoinjs-lib.js"></script>
+  <script type="module">
+    import NostrEmitter from './lib/client.js'
+
+    const DEFAULT_RELAY_URL = 'wss://nostr-relay.wlvs.space'
+    const DEFAULT_TOPIC_LBL = 'sample-topic'
+    const DEFAULT_SHARE_KEY = 'hunter2'
+
+    const configForm = document.querySelector('#config'),
+          msgBox     = document.querySelector('.chat-box'),
+          sendBox    = document.querySelector('.send-box'),
+          relayAddr  = document.querySelector('input[name="relayUrl"]'),
+          topicField = document.querySelector('input[name="topic"]'),
+          filterData = document.querySelector('input[name="filter"]'),
+          shareKey   = document.querySelector('input[name="sharedKey"]');
+
+    if (!relayAddr.getAttribute('value')) relayAddr.setAttribute('value', DEFAULT_RELAY_URL)
+    if (!topicField.getAttribute('value')) topicField.setAttribute('value', DEFAULT_TOPIC_LBL)
+    if (!shareKey.getAttribute('value')) shareKey.setAttribute('value', DEFAULT_SHARE_KEY)
+
+    console.log(sendBox)
+
+    configForm.addEventListener('submit', async (e) => {
+      e.preventDefault()
+
+      const config = Object.fromEntries(new FormData(e.target))
+
+      console.log(config)
+
+      const emitter = await new NostrEmitter(config)
+      console.log(emitter)
+
+      emitter.on('chatmsg', (event) => {
+        post(event.data)
+      })
+
+      sendBox.addEventListener('submit', (e) => {
+        e.preventDefault()
+        const { message } = Object.fromEntries(new FormData(e.target))
+        console.log(message)
+        emitter.emit('chatmsg', { data: message })
+        clearInput()
+      })
+    })
+
+    function post(msg) {
+      const message = document.createElement('pre')
+      message.innerText = msg
+      msgBox.appendChild(message)
+    }
+
+    function clearInput() {
+      const sendInput = document.querySelector('.send-box input')
+      sendInput.value = ''
+    }
+  </script>
+</body>
+</html>
