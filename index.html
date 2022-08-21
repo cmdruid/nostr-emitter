@@ -21,12 +21,8 @@
           <input name="topic" value="" placeholder="enter topic ...">
         </div>
         <div class="form-field">
-          <label>Filter</label>
-          <input name="filter" value="" placeholder="enter filter json ...">
-        </div>
-        <div class="form-field">
-          <label>Shared Key</label>
-          <input name="sharedKey" value="" placeholder="enter shared key ...">
+          <label>Password</label>
+          <input name="secret" value="" placeholder="enter secret password ...">
         </div>
         <button type="submit">Connect</button>
       </form>
@@ -49,26 +45,21 @@
     import NostrEmitter from './lib/client.js'
 
     const DEFAULT_RELAY_URL = 'wss://nostr-relay.wlvs.space'
-    const DEFAULT_TOPIC_LBL = 'sample-topic'
-    const DEFAULT_SHARE_KEY = 'hunter2'
 
     const configForm = document.querySelector('#config'),
           msgBox     = document.querySelector('.chat-box'),
           sendBox    = document.querySelector('.send-box'),
-          relayAddr  = document.querySelector('input[name="relayUrl"]'),
-          topicField = document.querySelector('input[name="topic"]'),
-          filterData = document.querySelector('input[name="filter"]'),
-          shareKey   = document.querySelector('input[name="sharedKey"]');
+          relayAddr  = document.querySelector('input[name="relayUrl"]')
 
     if (!relayAddr.getAttribute('value')) relayAddr.setAttribute('value', DEFAULT_RELAY_URL)
-    if (!topicField.getAttribute('value')) topicField.setAttribute('value', DEFAULT_TOPIC_LBL)
-    if (!shareKey.getAttribute('value')) shareKey.setAttribute('value', DEFAULT_SHARE_KEY)
 
     configForm.addEventListener('submit', async (e) => {
       e.preventDefault()
 
       const config  = Object.fromEntries(new FormData(e.target))
       const emitter = await new NostrEmitter(config)
+
+      console.log(config, emitter)
 
       emitter.on('chatmsg', (event) => {
         post(event.data)
