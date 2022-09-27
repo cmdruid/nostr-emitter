@@ -4,7 +4,7 @@ A server-less, peer-to-peer event emitter. Built on Nostr.
 ## How to use
 Specify the relay server to use, along with a shared secret.
 
-```
+```js
 // Declare a new event emitter object.
 const emitter = new NostrEmitter(
   'wss://nostr-relay.wlvs.space',
@@ -28,12 +28,12 @@ emitter.opt.selfPub = true
 
 // Specify optional parameters.
 const emitter = new NostrEmitter(relayUrl, secret, {
-  version : 0,         // Nostr protocol version.
-  kind    : 29001,     // Default event type (ephemeral).
-  selfPub : false,     // Filter self-published events.
-  socket  : WebSocket  // Specify your own websocket object.
-  tags    : []         // Add your own tags to each message.
-  filter  : {}         // Add your own subscription filters.
+  version : 0,          // Nostr protocol version.
+  kind    : 29001,      // Default event type (ephemeral).
+  selfPub : false,      // Filter self-published events.
+  socket  : WebSocket,  // Specify your own websocket object.
+  tags    : [],         // Add your own tags to each message.
+  filter  : {}          // Add your own subscription filters.
 })
 ```
 
