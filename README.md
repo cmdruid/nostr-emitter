@@ -22,15 +22,15 @@ emitter.on('some-event', eventData => {
 // Publish events like any other emitter.
 emitter.emit('some-event', 'world!')
 
-// Self-published events are filtered by
-// default, but you can enable them.
+// Self-published events are filtered out 
+// by default, but you can enable them.
 emitter.opt.selfPub = true
 
 // Specify optional parameters.
 const emitter = new NostrEmitter(relayUrl, secret, {
   version : 0,         // Nostr protocol version.
-  kind    : 29001,     // Nostr message type.
-  selfPub : false,     // React to self-published events.
+  kind    : 29001,     // Default event type (ephemeral).
+  selfPub : false,     // Filter self-published events.
   socket  : WebSocket  // Specify your own websocket object.
   tags    : []         // Add your own tags to each message.
   filter  : {}         // Add your own subscription filters.

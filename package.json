@@ -1,6 +1,6 @@
 {
   "name": "nostr-emitter",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "A simple event emitter, powered by Nostr.",
   "main": "index.js",
   "keywords": [
