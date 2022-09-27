@@ -7,7 +7,7 @@ This package is designed to work in both the browser and nodejs.
 
 ```html
 <!-- Browser import -->
-<script src='https://unpkg.com/noble-secp256k1'></script>
+<script src='https://bundle.run/noble-secp256k1@1.2.14'></script>
 <script src="https://unpkg.com/nostr-emitter"></script>
 ```
 ```js
