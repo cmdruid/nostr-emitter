@@ -1,9 +1,27 @@
 # nostr-emitter
-A server-less, peer-to-peer event emitter. Built on Nostr.
+A basic peer-to-peer event emitter, built on the Nostr protocol.
+
+
+## Installation
+This package is designed to work in both the browser and nodejs.
+
+```html
+<!-- Browser import -->
+<script src='https://unpkg.com/noble-secp256k1'></script>
+<script src="https://unpkg.com/nostr-emitter"></script>
+```
+```js
+// Commonjs import.
+const NostrEmitter = require('nostr-emitter')
+// ES6 import.
+import NostrEmitter from 'nostr-emitter'
+```
+
 
 ## How to use
-Specify the relay server to use, along with a shared secret.
+To get started, simply provide a relay server and shared secret to use, then run `emitter.connect()`.
 
+Once connected, the emitter behaves like a typical EventEmitter object.
 ```js
 // Declare a new event emitter object.
 const emitter = new NostrEmitter(
@@ -37,27 +55,40 @@ const emitter = new NostrEmitter(relayUrl, secret, {
 })
 ```
 
+
 ## How it works
-The contents of each message is end-to-end encrypted using a hash of the shared secret, then tagged with a double-hash of the secret. 
+The contents of each event is end-to-end encrypted using a hash of the shared secret, then the event itself is tagged with a double-hash of the secret. 
 
-Messages are filtered by this hash-tag, so your emitters will only see ones that are tagged with the proper hash. Older messages are also filtered out.
+Events are filtered by this hash-tag, so each emitter will only see events tagged with the proper hash. Old events are also filtered out by default.
 
-Everything else works like a basic event emitter API: 'on', 'once', 'emit' and 'remove'.
+Everything else works like a basic event emitter API. Methods include 'on', 'once', 'emit' and 'remove'.
 
-## Tips
-* The shared secret can be something simple that anyone can guess, like 'general-chat'.
-
-* For organizing channels, try concatenating your secrets:
-  'topic/subtopic/password' etc.
-
+Some helpful tips:
+* For public channels, the shared secret can be something obvious, like 'general-chat'.
+* For organizing groups or channels, try using paths as a secret string: 'secret/topic/subtopic'
 * You can change the default emitter.filter before calling emitter.connect().
+* The main index.js file is less than 400 lines of code. Feel free to change it as you wish!
+
 
 ## Resources
+
+**Noble-secp256k1 Library**  
+Used for identity and signing events.  
+https://github.com/paulmillr/noble-secp256k1
+
+**Websockets** (nodejs only)  
+Used for communicating over a websocket.  
+https://github.com/websockets/ws
+
 **Nostr Implementation Possibilities**  
 https://github.com/nostr-protocol/nips
 
-**Noble-secp256k1 Library**  
-https://github.com/paulmillr/noble-secp256k1
-
 **Nostr-tools**  
 https://github.com/fiatjaf/nostr-tools
+
+## Contributions
+All contributions are welcome!
+
+## Special Thanks
+Special thanks to supertestnet for his help and guidance.  
+https://github.com/supertestnet
