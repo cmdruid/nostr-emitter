@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nostr-RPC Demo</title>
+</head>
+<body>
+  <script src='https://bundle.run/noble-secp256k1@1.2.14'></script>
+  <script src='https://unpkg.com/nostr-emitter'></script>
+  <script type="module">
+
+    const emitter = new NostrEmitter(
+      'wss://nostr-relay.wlvs.space',
+      'bitcoin:password'
+    )
+
+    await emitter.connect()
+
+    emitter.on('response', data => {
+      console.log('response', data)
+    })
+    
+    emitter.emit('call', ['getblockchaininfo'])
+
+  </script>
+</body>
+</html>

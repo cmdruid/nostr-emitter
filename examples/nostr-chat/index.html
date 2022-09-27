@@ -5,7 +5,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Document</title>
-  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
   <div>
@@ -40,9 +40,8 @@
     </div>
   </div>
   <script src='https://bundle.run/noble-secp256k1@1.2.14'></script>
+  <script src='https://unpkg.com/nostr-emitter'></script>
   <script type="module">
-    import NostrEmitter from './lib/client.js'
-
     const DEFAULT_RELAY_URL = 'wss://nostr-relay.wlvs.space'
 
     const configForm = document.querySelector('#config'),
@@ -55,14 +54,22 @@
     configForm.addEventListener('submit', async (e) => {
       e.preventDefault()
 
-      const config  = Object.fromEntries(new FormData(e.target))
-      const emitter = await new NostrEmitter(config)
+      let { relayUrl, topic, secret } = Object.fromEntries(new FormData(e.target))
+      
+      if (!topic) topic = 'general'
 
-      console.log(config, emitter)
+      const emitter = new NostrEmitter(relayUrl, topic + secret)
+
+      await emitter.connect()
+
+      emitter.opt.selfPub = true
 
       emitter.on('chatmsg', (event, meta) => {
+        const name = (meta.pubkey === emitter.keys.pub)
+          ? 'me'
+          : meta.pubkey.slice(-6)
+        post(name, event.data)
         console.log(event, meta)
-        post(event.data)
       })
 
       sendBox.addEventListener('submit', (e) => {
@@ -73,9 +80,9 @@
       })
     })
 
-    function post(msg) {
+    function post(name, msg) {
       const message = document.createElement('pre')
-      message.innerText = msg
+      message.innerText = `<${name}> ${msg}`
       msgBox.appendChild(message)
     }
 

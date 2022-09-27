@@ -1,0 +1,25 @@
+{
+  "name": "nostr-emitter",
+  "version": "1.0.10",
+  "description": "A simple event emitter, powered by Nostr.",
+  "main": "index.js",
+  "keywords": [
+    "event",
+    "emitter",
+    "pub",
+    "sub",
+    "nostr"
+  ],
+  "author": "Christopher Scott",
+  "license": "CC-BY-1.0",
+  "repository": "https://github.com/cmdruid/nostr-emitter",
+  "dependencies": {
+    "@noble/secp256k1": "^1.2.14",
+    "ws": "^8.9.0"
+  },
+  "files": [
+    "index.js",
+    "README.md",
+    "LICENSE"
+  ]
+}

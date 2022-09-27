@@ -1,0 +1,14 @@
+{
+  "name": "nostr-rpc",
+  "version": "1.0.0",
+  "description": "Example using nostr-emitter to forward Bitcoin Core RPC calls.",
+  "main": "app.js",
+  "author": "Christopher Scott",
+  "license": "CC-BY-1.0",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "nostr-emitter": "^1.0.10"
+  }
+}
