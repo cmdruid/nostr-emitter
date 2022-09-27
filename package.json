@@ -1,8 +1,11 @@
 {
-  "name": "nostr-emitter",
-  "version": "1.0.11",
+  "name": "@cmdruid/nostr-emitter",
+  "version": "1.0.12",
   "description": "A simple event emitter, powered by Nostr.",
   "main": "index.js",
+  "scripts": {
+    "test": "exit 0"
+  },
   "keywords": [
     "event",
     "emitter",
@@ -12,7 +15,10 @@
   ],
   "author": "Christopher Scott",
   "license": "CC-BY-1.0",
-  "repository": "https://github.com/cmdruid/nostr-emitter",
+  "repository": "https://github.com/cmdruid/nostr-emitter.git",
+  "publishConfig": {
+    "@cmdruid:registry": "https://npm.pkg.github.com"
+  },
   "dependencies": {
     "@noble/secp256k1": "^1.2.14",
     "ws": "^8.9.0"
