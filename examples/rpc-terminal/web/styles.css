@@ -1,0 +1,147 @@
+body {
+  background-color: #21222b;
+  padding: 0 1rem;
+  color: whitesmoke;
+  font-family: monospace;
+  min-width: 400px;
+  max-height: 1200px;
+  
+}
+
+h1,p {
+  text-align: center;
+  padding: 0 0.5rem 0 0.5rem;
+}
+
+pre {
+  margin: 0;
+  white-space: pre-wrap
+}
+
+input {
+  flex-grow: 1;
+  border: none;
+  background-color: transparent;
+  width: auto;
+  color: transparent;
+  text-shadow: 0 0 0 whitesmoke;
+  font-weight: bold;
+  font-family: monospace;
+}
+
+input:focus {
+  outline: none;
+}
+
+section {
+  max-width: 550px;
+  margin: auto;
+}
+
+.container {
+  background-color: #282a35;
+  margin-bottom: 1rem;
+  border: 1px solid white;
+  width: 0 auto;
+}
+
+.title-bar {
+  border-bottom: 1px solid purple;
+}
+
+.title-bar p {
+  font-weight: bold;
+  margin: 0.25rem;
+  color: rgb(96, 192, 101);
+}
+
+.info-window, .connect-window {
+  padding: 0.5rem;
+}
+
+.info-window pre, .connect-window pre {
+  overflow: hidden;
+  text-align: center;
+}
+
+.terminal-window {
+  height: 15rem;
+  margin-top: 0.5rem;
+  padding: 0 0.25rem 0 0.25rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.term-entry {
+  word-break: break-all
+}
+
+.cmd-window {
+  padding: 0.5rem;
+}
+
+.terminal-prompt, .connect-prompt {
+  display: flex;
+}
+
+.connect-prompt {
+  border: 1px dashed whitesmoke;
+  margin-top: 0.5rem;
+  padding: 0.25rem;
+}
+
+.prompt-user {
+  color: #87d441;
+  font-weight: bold;
+}
+.prompt-location {
+  color: #6d85a9;
+  font-weight: bold;
+}
+.prompt-dollar {
+  color: #ddd;
+  font-weight: bold;
+}
+.prompt-cursor {
+  height: 17px;
+  width: 8px;
+  background: white;
+  display: block;
+  margin-left: 8px;
+  animation: 1000ms ease infinite alternate blink;
+}
+
+.connect-input {
+  font-size: smaller;
+  font-weight: normal;
+}
+
+.send-btn, .connect-btn {
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.connect-btn {
+  background-color: #88d441a9;
+}
+
+.event-window {
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: 20rem;
+  margin-top: 0.5rem;
+  margin-right: 0.5rem;
+}
+
+.log-entry {
+  padding-bottom: 0.25rem;
+}
+
+@keyframes blink {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
