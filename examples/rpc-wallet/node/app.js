@@ -23,6 +23,7 @@ emitter.connect()
   })
   emitter.on('call', async data => {
     const [ method, ...params ] = data
+    console.log(method, params)
     let response = await rpc(method, params)
     emitter.emit('response', response)
   })

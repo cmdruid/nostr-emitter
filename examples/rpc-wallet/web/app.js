@@ -44,17 +44,6 @@ async function connect(str) {
 
   emitter.emit('getinfo')
 
-  // socket.emitter.on('event', ({ event, data }) => {
-  //   /* Listen for event messages and post them to our log window. */
-  //   const logEntry = document.createElement("pre")
-  //   if (eventWindow.children.length > MAX_EVENTS) {
-  //     eventWindow.lastElementChild.remove()
-  //   }
-  //   logEntry.classList.add("log-entry")
-  //   logEntry.textContent = format(data)
-  //   eventWindow.prepend(logEntry)
-  // });
-
   termInput.addEventListener('keypress', e => {
     /* Capture 'enter' keypress from the command line. */
     if (e.key === 'Enter') sendCommand(e.target.value) 
@@ -79,7 +68,8 @@ async function connect(str) {
     });
     /* Send the command and reset our command line. */
     emitter.emit('call', [ command, ... args ])
-    termInput.value=""
+    termInput.value = ""
+    input.style.width = 0
   }
 
   function format(json) {
@@ -89,3 +79,16 @@ async function connect(str) {
     return text
   }
 }
+
+const input = document.querySelector('.input-field')
+
+input.querySelector('input').addEventListener('input', (e) => {
+  const length = Math.min(e.target.value.length * 0.5 + 0.2, 20)
+  input.style.width = length + 'rem'
+})
+
+const inputBar = document.querySelector('.input-bar')
+
+inputBar.addEventListener('click', (e) => {
+  input.querySelector('input').focus()
+})

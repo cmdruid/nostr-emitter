@@ -20,9 +20,9 @@ pre {
 
 input {
   flex-grow: 1;
+  width: 100%;
   border: none;
   background-color: transparent;
-  width: auto;
   color: transparent;
   text-shadow: 0 0 0 whitesmoke;
   font-weight: bold;
@@ -33,26 +33,83 @@ input:focus {
   outline: none;
 }
 
+header {
+  padding: 1em;
+  margin-bottom:2em;
+  background-color: #282a35;
+  
+}
+
 section {
   max-width: 550px;
   margin: auto;
 }
 
 .container {
-  background-color: #282a35;
   margin-bottom: 1rem;
-  border: 1px solid white;
-  width: 0 auto;
 }
 
 .title-bar {
-  border-bottom: 1px solid purple;
+  width: 10rem;
+  margin: 0 auto;
 }
 
 .title-bar p {
   font-weight: bold;
-  margin: 0.25rem;
+  margin: 0.5rem;
   color: rgb(96, 192, 101);
+  
+}
+
+.shadow {
+  background-color: #282a35;
+  margin-bottom: 1rem;
+  border: 1px solid #8b8b8b86;
+}
+
+.hide {
+  display: none;
+}
+
+.program-menu ul {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  list-style-type: none;
+  margin: 0 auto;
+  padding: 0;
+}
+
+.program-menu li {
+  margin: 0 0.5rem;
+}
+
+.program-menu li p {
+  text-align: center;
+  margin: 0;
+  height: 1rem;
+  line-height: 1rem;
+  padding: 0.5rem;
+}
+
+.program-menu li p:hover, .program-active {
+  font-weight: bold;
+  background-color: #6d85a9;
+}
+
+.program-menu li:last-child {
+  border-right: none;
+}
+
+.terminal {
+  border: 1px solid #8b8b8b86;
+  background-color: #282a35;
+}
+
+.terminal .title-bar {
+  width: 100%;
+  border-bottom: 1px solid purple;
+  border-left: none;
 }
 
 .info-window, .connect-window {
@@ -82,6 +139,38 @@ section {
 
 .terminal-prompt, .connect-prompt {
   display: flex;
+  align-items: center;
+  align-content: space-between;
+}
+
+.terminal-prompt .login {
+  flex-shrink: 1;
+  height: 1rem;
+  line-height: 1rem;
+}
+
+.input-bar {
+  flex-grow: 1;
+  display: flex;
+  align-content: flex-start;
+  line-height: 1rem;
+  padding: 0;
+}
+
+.input-field {
+  margin: 0;
+  width: 0rem;
+}
+
+.cursor {
+  border: 1px dotted blue;
+  padding: 0;
+  margin: 0;
+  width: 0.5rem;
+}
+
+.input-bar .prompt-cursor {
+  margin-left: auto;
 }
 
 .connect-prompt {
@@ -123,18 +212,26 @@ section {
 
 .connect-btn {
   background-color: #88d441a9;
+  height: 1.5em;
+  line-height: 1.5em;
+  min-width: 6rem;
+  text-align: center;
 }
 
-.event-window {
+.program-window {
   overflow-y: auto;
   overflow-x: hidden;
-  height: 20rem;
+  height: 10rem;
   margin-top: 0.5rem;
   margin-right: 0.5rem;
 }
 
 .log-entry {
   padding-bottom: 0.25rem;
+}
+
+:root {
+  --retro-shadow: rgba(240, 46, 170, 0.4) 0 1px, rgba(240, 46, 170, 0.3) 0 2px, rgba(240, 46, 170, 0.2) 0 3px, rgba(240, 46, 170, 0.1) 0 4px, rgba(240, 46, 170, 0.05) 0 5px;
 }
 
 @keyframes blink {
