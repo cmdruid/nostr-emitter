@@ -1,15 +1,16 @@
-const { webcrypto: crypto } = require('crypto')
+import { getRandomHex } from './crypto.js'
 
-async function rpc(method, args = [], config = {}) {
+export default async function rpc(method, args = [], opt = {}) {
   /** Send a JSON-RPC call to the configured server. */
 
-  const user = config.user   || 'bitcoin',
-        pass = config.pass   || 'password',
-        url  = config.url    || 'http://127.0.0.1',
-        port = config.port   || '18443'
+  const user = opt.user   || 'bitcoin',
+        pass = opt.pass   || 'password',
+        url  = opt.url    || 'http://127.0.0.1',
+        port = opt.port   || '18443',
+        wall = opt.wallet || null
 
   // Random identifer for our request.
-  const requestId = crypto.randomUUID()
+  const requestId = getRandomHex()
 
   // Authorization string for our request.
   const authString = Buffer.from(user + ':' + pass).toString('base64')
@@ -18,7 +19,6 @@ async function rpc(method, args = [], config = {}) {
   args = (Array.isArray(args)) ? args : [ args ]
 
   try {
-
     // Confgigure our request object.
     const request = {
       method: 'POST',
@@ -34,8 +34,13 @@ async function rpc(method, args = [], config = {}) {
       })
     }
 
+    // Configure our URL to include a wallet, if provided.
+    const baseUrl = (wall)
+      ? `${url}:${port}/wallet/${wall}`
+      : `${url}:${port}`
+
     // Fetch a response from our node.
-    const response = await fetch(`${url}:${port}`, request)
+    const response = await fetch(baseUrl, request)
 
     // If the response fails, throw an error.
     if (!response.ok && !response.json) {
@@ -49,13 +54,13 @@ async function rpc(method, args = [], config = {}) {
     if (error) {
       const { code, message } = error
       if (code === -1) {
-        throw `RPC command ${method} failed with syntax error. Please check your arguments.`
-      } else { throw `RPC command ${method} failed with error: ${message}` }
+        return { error: `RPC command ${method} failed with syntax error. Please check your arguments.` }
+      } else { 
+        return { error: `RPC command ${method} failed with error: ${message}` }
+      }
     }
 
     return result
 
-  } catch(err) { console.log(err) }
+  } catch(err) { return { error: err } }
 }
-
-module.exports = rpc

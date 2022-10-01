@@ -24,13 +24,13 @@ To get started, simply provide a relay server and shared secret to use, then run
 Once connected, the emitter behaves like a typical EventEmitter object.
 ```js
 // Declare a new event emitter object.
-const emitter = new NostrEmitter(
+const emitter = new NostrEmitter()
+
+// Connect your emitter to the relay.
+await emitter.connect(
   'wss://nostr-relay.wlvs.space',
   'secret-string'
 )
-
-// Connect your emitter to the relay.
-await emitter.connect()
 
 // Register an event listener.
 emitter.on('some-event', eventData => {
@@ -45,7 +45,7 @@ emitter.emit('some-event', 'world!')
 emitter.opt.selfPub = true
 
 // Specify optional parameters.
-const emitter = new NostrEmitter(relayUrl, secret, {
+const emitter = new NostrEmitter({
   version : 0,          // Nostr protocol version.
   kind    : 29001,      // Default event type (ephemeral).
   selfPub : false,      // Filter self-published events.

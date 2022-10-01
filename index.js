@@ -6,7 +6,7 @@ const { schnorr } = (isBrowser)
   ? window.nobleSecp256k1
   : require('@noble/secp256k1')
 const WebSocket = (isBrowser)
-  ? window.WebSocket 
+  ? window.WebSocket
   : require('ws')
 const crypto = (isBrowser)
   ? window.crypto
@@ -42,15 +42,7 @@ const DEFAULT_FILTER = {
 }
 
 class NostrEmitter {
-  constructor(relayUrl, secret, opt={}) {
-
-    if (!relayUrl) {
-      throw new Error('Must provide url to a relay!')
-    }
-
-    if (!secret) {
-      throw new Error('Must provide a shared secret!')
-    }
+  constructor(opt={}) {
 
     this.connected  = false
     this.subscribed = false
@@ -64,65 +56,50 @@ class NostrEmitter {
 
     this.events = []
     this.tags   = []
-    this.url    = relayUrl
-    this.secret = secret
+    this.url    = null
+    this.secret = null
     this.subId  = null
     this.opt    = { ...DEFAULT_OPT, ...opt }
-    this.socket = opt?.socket || new WebSocket(this.url)
+    this.socket = opt?.socket || null
 
     this.filter = {
       'kinds': [ this.opt.kind ],
       ...DEFAULT_FILTER,
       ...opt.filter,
     }
+  }
+
+  async subscribe() {
+    /** Send a subscription message to the socket peer.
+     */
+    const subId = getRandomString()
+    const subscription = [ "REQ", subId, this.filter ]
+    this.socket.send(JSONencode(subscription))
+  }
+
+
+  async connect(relayUrl, secret) {
+    // We need to generate a new key-pair for signing messages.
+
+    if (!relayUrl) {
+      throw new Error('Must provide url to a relay!')
+    } else { this.url = relayUrl }
+
+    if (!secret) {
+      throw new Error('Must provide a shared secret!')
+    } else { this.secret = secret }
+
+
+    this.socket = new WebSocket(relayUrl)
 
     if (isBrowser) {
       // Compatibility fix between node and browser.
       this.socket.on = this.socket.addEventListener
     }
 
-    this.socket.on('open', (_) => {
-      console.log('Socket connected to: ', this.url)
-      this.connected = true
-      this.subscribe()
-    })
+    this.socket.on('open', (event) => this.openHandler(event))
+    this.socket.on('message', (event) => this.messageHandler(event))
 
-    this.socket.on('message', async (event) => {
-      // Decode message based upon the data type.
-      
-      const [ type, subId, data ] = this.decodeEvent(event)
-
-      // Check if event is a response to a subscription.
-      if (type === 'EOSE') {
-        this.subId = subId
-        this.subscribed = true
-        console.log('Subscription Id:', this.subId)
-      }
-
-      // If the event has no data, return.
-      if (!data) return
-
-      // Unpack our data object.
-      const { content, ...meta } = data
-    
-      // If the event is from ourselves, filter it.
-      if (meta?.pubkey === this.keys.pub && !this.opt.selfPub) {
-        return
-      }
-      
-      // Decrypt the content.
-      const { eventName, eventData } = await this.decryptContent(content)
-
-      this._getEventListByName(eventName).forEach(function(fn) {
-        fn.apply(this, [ ...eventData, meta ])
-      }.bind(this))
-    })
-
-    return this
-  }
-
-  async connect() {
-    // We need to generate a new key-pair for signing messages.
     const keys = await genSignKeys()
   
     this.keys = { 
@@ -151,14 +128,6 @@ class NostrEmitter {
     })
   }
 
-  async subscribe() {
-    /** Send a subscription message to the socket peer.
-     */
-    const subId = getRandomString()
-    const subscription = [ "REQ", subId, this.filter ]
-    this.socket.send(JSONencode(subscription))
-  }
-
   decodeEvent(event) {
     // Decode an incoming event.
     return (event instanceof Uint8Array)
@@ -170,6 +139,43 @@ class NostrEmitter {
     return decrypt(content, this.keys.shared)
       .then((data) => JSONdecode(data))
       .catch((err) => console.error(err))
+  }
+
+  async openHandler(event) {
+    console.log('Socket connected to: ', this.url)
+    this.connected = true
+    this.subscribe()
+  }
+
+  async messageHandler(event) {
+    // Decode message based upon the data type.
+    
+    const [ type, subId, data ] = this.decodeEvent(event)
+
+    // Check if event is a response to a subscription.
+    if (type === 'EOSE') {
+      this.subId = subId
+      this.subscribed = true
+      console.log('Subscription Id:', this.subId)
+    }
+
+    // If the event has no data, return.
+    if (!data) return
+
+    // Unpack our data object.
+    const { content, ...meta } = data
+  
+    // If the event is from ourselves, filter it.
+    if (meta?.pubkey === this.keys.pub && !this.opt.selfPub) {
+      return
+    }
+    
+    // Decrypt the content.
+    const { eventName, eventData } = await this.decryptContent(content)
+
+    this._getEventListByName(eventName).forEach(function(fn) {
+      fn.apply(this, [ ...eventData, meta ])
+    }.bind(this))
   }
 
   async send(eventName, eventData) {

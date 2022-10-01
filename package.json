@@ -1,6 +1,6 @@
 {
   "name": "@cmdruid/nostr-emitter",
-  "version": "1.0.12",
+  "version": "1.0.14",
   "description": "A simple event emitter, powered by Nostr.",
   "main": "index.js",
   "scripts": {
