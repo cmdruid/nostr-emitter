@@ -17,7 +17,6 @@ const NostrEmitter = require('nostr-emitter')
 import NostrEmitter from 'nostr-emitter'
 ```
 
-
 ## How to use
 To get started, simply provide a relay server and shared secret to use, then run `emitter.connect()`.
 

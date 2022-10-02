@@ -6,18 +6,11 @@ const inputField  = document.querySelector('.input-field')
 const inputCursor = document.querySelector('.input-cursor')
 const sendButton  = document.querySelector('.send-btn')
 
-// window.addEventListener('focus', (e) => {
-//   console.log(e)
-//   inputCursor.classList.remove('hide')
-//   
-// })
-
 window.addEventListener('blur', (e) => {
   inputCursor.classList.add('hide')
 })
 
 window.addEventListener('click', (e) => {
-  console.log(e.target)
   if (e.target === commandLine) {
     inputCursor.classList.remove('hide')
     inputField.querySelector('input').focus()
@@ -34,7 +27,7 @@ inputField.addEventListener('input', (e) => {
 inputField.addEventListener('keypress', e => {
   /* Capture 'enter' keypress from the command line. */
   if (e.key === 'Enter') sendCommand(e.target.value)
-});
+})
 
 sendButton.addEventListener('click', e => {
   /* Capture mouse-clicks on our enter button. */
@@ -62,7 +55,7 @@ function sendCommand(str) {
     termWindow.replaceChildren()
     termWindow.append(termEntry)
     termWindow.scrollTo({ top: 0 })
-  });
+  })
   /* Send the command and reset our command line. */
   emitter.emit('call', [ command, ... args ])
   inputField.value = ""
