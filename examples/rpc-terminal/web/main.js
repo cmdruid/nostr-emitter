@@ -8,6 +8,8 @@ const infoWindow = document.querySelector('.info-window pre')
 // Setup the event emitter.
 const emitter = new NostrEmitter()
 
+let interval, REFRESH_INTERVAL = 5000;
+
 // Configure listeners for menu items.
 for (const item of menuItems) {
   item.addEventListener('click', (e) => {
@@ -29,6 +31,7 @@ connInput.addEventListener('keypress', e => {
 });
 
 connButton.addEventListener('click', e => {
+  localStorage.setItem('connectString', connInput.value)
   connect(connInput.value)
 })
 
@@ -45,10 +48,15 @@ emitter.on('error', (err) => {
 
 async function connect(str) {
   const [ relayUrl, secret ] = atob(str).split(':')
-  localStorage.setItem('connectString', str)
-  await emitter.connect('wss://' + relayUrl, secret)
-  emitter.emit('getinfo')
   document.querySelector('#default').click()
+  await emitter.connect('wss://' + relayUrl, secret)
+  if (emitter.connected) {
+    emitter.emit('getinfo')
+    clearInterval(interval)
+    interval = setInterval(() => { 
+      emitter.emit('getinfo') 
+    }, REFRESH_INTERVAL)
+  }
 }
 
 function main() {
