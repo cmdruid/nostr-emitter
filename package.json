@@ -17,7 +17,8 @@
   "license": "CC-BY-1.0",
   "repository": "https://github.com/cmdruid/nostr-emitter.git",
   "publishConfig": {
-    "@cmdruid:registry": "https://npm.pkg.github.com"
+    "registry": "https://registry.npmjs.org",
+    "access": "public"
   },
   "dependencies": {
     "@noble/secp256k1": "^1.2.14",
