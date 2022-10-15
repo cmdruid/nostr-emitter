@@ -1,5 +1,5 @@
 {
-  "name": "@cmdruid/nostr-emitter",
+  "name": "nostr-emitter",
   "version": "1.0.15",
   "description": "A simple event emitter, powered by Nostr.",
   "main": "index.js",
