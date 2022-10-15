@@ -6,7 +6,7 @@ const connButton = document.querySelector('.connect-btn')
 const infoWindow = document.querySelector('.info-window pre')
 
 // Setup the event emitter.
-const emitter = new NostrEmitter()
+// const emitter = new NostrEmitter()
 
 let interval, REFRESH_INTERVAL = 5000
 
@@ -43,8 +43,7 @@ connButton.addEventListener('click', e => {
   connect(connInput.value)
 })
 
-emitter.on('nodeinfo', (data) => {
-  console.log(data)
+emitter.on('nodeinfo', data => {
   // When the socket connects, fetch info from our node.
   const { balance, blockct, chain } = data
   infoWindow.textContent = `balance: ${balance} | network: ${chain} | blockheight: ${blockct}`

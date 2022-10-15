@@ -56,7 +56,8 @@ class NostrEmitter {
     this.secret = null;
     this.subId = null;
     this.opt = { ...DEFAULT_OPT, ...opt };
-    this.socket = opt?.socket || null;
+    this.socket = opt.socket || null;
+    this.log = (...s) => (opt.log) ? opt.log(...s) : console.log(...s)
 
     this.filter = {
       kinds: [this.opt.kind],
@@ -121,10 +122,10 @@ class NostrEmitter {
         retries = 10;
       let interval = setInterval(() => {
         if (this.connected && this.subscribed) {
-          console.log("Connected and subscribed!");
+          this.log("Connected and subscribed!");
           res(clearInterval(interval));
         } else if (count > retries) {
-          console.log("Failed to connect!");
+          this.log("Failed to connect!");
           rej(clearInterval(interval));
         } else {
           count++;
@@ -149,7 +150,7 @@ class NostrEmitter {
 
   async openHandler(event) {
     /** Handle the socket open event. */
-    console.log("Socket connected to: ", this.url);
+    this.log("Socket connected to: ", this.url);
     this.connected = true;
     this.subscribe();
   }
@@ -162,18 +163,18 @@ class NostrEmitter {
     if (type === "EOSE") {
       this.subId = subId;
       this.subscribed = true;
-      console.log("Subscription Id:", this.subId);
+      this.log("Subscription Id:", this.subId);
     }
 
     // If the event has no data, return.
     if (!data) return;
 
     // Unpack our data object.
-    const { content, ...meta } = data;
+    const { content, ...metaData } = data;
 
     // If the event is from ourselves, 
     // check the filter rules.
-    if (meta?.pubkey === this.keys.pub) {
+    if (metaData?.pubkey === this.keys.pub) {
       if (!this.opt.selfPub) return
     }
 
@@ -183,12 +184,12 @@ class NostrEmitter {
     // Apply the event to our emitter.
     this._getEventListByName(eventName).forEach(
       function (fn) {
-        fn.apply(this, [...eventData, meta]);
+        fn.apply(this, [eventData, metaData]);
       }.bind(this)
     );
   }
 
-  async send(eventName, eventData) {
+  async send(eventName, eventData, eventMsg = {}) {
     /** Send a data message to the relay. */
     const serialData = JSONencode({ eventName, eventData });
     const event = {
@@ -197,6 +198,7 @@ class NostrEmitter {
       kind       : this.opt.kind,
       tags       : [...this.tags, ...this.opt.tags],
       pubkey     : this.keys.pub,
+      ...eventMsg,
     }
 
     // Sign our message.
@@ -257,7 +259,7 @@ class NostrEmitter {
      * */
     const self = this;
 
-    const onceFn = function (...args) {
+    const onceFn = function (args) {
       self.removeListener(eventName, onceFn);
       fn.apply(self, args);
     };
@@ -265,11 +267,11 @@ class NostrEmitter {
     this.on(eventName, onceFn);
   }
 
-  emit(eventName, ...args) {
+  emit(eventName, args, eventMsg) {
     /** Emit a series of arguments for the event, and
      *  present them to each subscriber in the list.
      * */
-    this.send(eventName, args);
+    this.send(eventName, args, eventMsg);
   }
 
   remove(eventName, fn) {
