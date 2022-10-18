@@ -27,10 +27,11 @@ const JSONdecode = (data) => JSON.parse(data);
 
 // Default options to use.
 const DEFAULT_OPT = {
-  version: 0, // Protocol version.
-  kind: 29001, // Default event type.
-  tags: [], // Global tags for events.
-  selfPub: false, // React to self-published events.
+  version: 0,      // Protocol version.
+  kind: 29001,     // Default event type.
+  tags: [],        // Global tags for events.
+  selfPub: false,  // React to self-published events.
+  verbose: false,  // Show verbose log output.
   since: Math.floor(Date.now() / 1000)
 };
 
@@ -172,7 +173,11 @@ class NostrEmitter {
 
   messageHandler(event) {
     /** Handle the socket message event. */
-    const [type, subId, data] = this.decodeEvent(event);
+    const [type, subId, data] = this.decodeEvent(event)
+
+    if (this.opt.verbose) {
+      this.log('messageEvent: ' + JSON.stringify(event, null, 2))
+    }
 
     // Check if event is a response to a subscription.
     if (type === 'EOSE') {
@@ -200,6 +205,11 @@ class NostrEmitter {
     // Decrypt the message content.
     const { eventName, eventData } = await this.decryptContent(content);
 
+    if (this.opt.verbose) {
+      this.log(eventName + ' event: ' + JSON.stringify(eventData, null, 2))
+      this.log('metaData: ' + JSON.stringify(metaData, null, 2))
+    }
+
     // Apply the event to our emitter.
     const allEvents = [
       ...this._getEventListByName(eventName),
@@ -223,6 +233,10 @@ class NostrEmitter {
       kind       : eventMsg.kind || this.opt.kind,
       tags       : [...this.tags, ...this.opt.tags, ...eventMsg.tags],
       pubkey     : this.keys.pub
+    }
+
+    if (this.opt.verbose) {
+      this.log('sendEvent: ' + JSON.stringify(event, null, 2))
     }
 
     // Sign our message.
