@@ -284,7 +284,7 @@ class NostrEmitter {
      * */
     const self = this;
 
-    const onceFn = function (args) {
+    const onceFn = function (...args) {
       self.remove(eventName, onceFn);
       fn.apply(self, args);
     };
@@ -296,8 +296,8 @@ class NostrEmitter {
     /** Subscribe function to run within a given,
      *  amount of time, then cancel the subscription.
      * */
-    this.once(eventName, fn)
     setTimeout(() => this.remove(eventName, fn), timeout)
+    this.on(eventName, fn)
   }
 
   emit(eventName, args, eventMsg) {
