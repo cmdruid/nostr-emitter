@@ -175,7 +175,7 @@ class NostrEmitter {
     const [type, subId, data] = this.decodeEvent(event)
 
     if (this.opt.verbose) {
-      this.log('messageEvent: ' + JSON.stringify(event, null, 2))
+      this.log('messageEvent: ' + JSON.stringify([type, subId, data], null, 2))
     }
 
     // Check if event is a response to a subscription.
