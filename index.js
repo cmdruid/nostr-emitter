@@ -292,6 +292,14 @@ class NostrEmitter {
     this.on(eventName, onceFn);
   }
 
+  within(eventName, fn, timeout) {
+    /** Subscribe function to run within a given,
+     *  amount of time, then cancel the subscription.
+     * */
+    this.once(eventName, fn)
+    setTimeout(() => this.remove(eventName, fn), timeout)
+  }
+
   emit(eventName, args, eventMsg) {
     /** Emit a series of arguments for the event, and
      *  present them to each subscriber in the list.
