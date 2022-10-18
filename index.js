@@ -285,7 +285,7 @@ class NostrEmitter {
     const self = this;
 
     const onceFn = function (args) {
-      self.removeListener(eventName, onceFn);
+      self.remove(eventName, onceFn);
       fn.apply(self, args);
     };
 
