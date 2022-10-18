@@ -214,16 +214,15 @@ class NostrEmitter {
     )
   }
 
-  async send(eventName, eventData, eventMsg = {}) {
+  async send(eventName, eventData, eventMsg = { tags: [] }) {
     /** Send a data message to the relay. */
     const serialData = JSONencode({ eventName, eventData });
     const event = {
       content    : await encrypt(serialData, this.keys.shared),
       created_at : Math.floor(Date.now() / 1000),
-      kind       : this.opt.kind,
-      tags       : [...this.tags, ...this.opt.tags],
-      pubkey     : this.keys.pub,
-      ...eventMsg,
+      kind       : eventMsg.kind || this.opt.kind,
+      tags       : [...this.tags, ...this.opt.tags, ...eventMsg.tags],
+      pubkey     : this.keys.pub
     }
 
     // Sign our message.
