@@ -38,14 +38,9 @@ const DEFAULT_OPT = {
 class NostrEmitter {
   // Our main class object.
 
-  static utils = {}
+  static globals = { isBrowser: typeof window !== 'undefined' }
 
-  static connectString(relayUrl, secret) {
-    const str = `${relayUrl}:${secret}`
-    return isBrowser
-      ? btoa(str)
-      : Buffer.from(str, 'utf8').toString('base64')
-  }
+  static utils = {}
 
   constructor(opt = {}) {
     this.connected = false;
@@ -106,6 +101,10 @@ class NostrEmitter {
     if (!this.secret) {
       throw new Error('Must provide a shared secret!')
     }
+
+    this.relayUrl = (this.relayUrl.includes('wss://'))
+      ? this.relayUrl
+      : 'wss://' + this.relayUrl
 
     this.socket = new WebSocket(this.relayUrl)
 
@@ -429,6 +428,20 @@ function getRandomString(size = 32) {
   return bytesToHex(getRandomBytes(size));
 }
 
+function encodeShareLink(secret, relayUrl) {
+  const str = `${secret}@${relayUrl}`
+  return (NostrEmitter.globals.isBrowser)
+    ? btoa(str)
+    : Buffer.from(str, 'utf8').toString('base64')
+}
+
+function decodeShareLink(str) {
+  const decoded = (NostrEmitter.globals.isBrowser)
+    ? atob(str)
+    : Buffer.from(str, 'base64').toString('utf8')
+  return decoded.split('@')
+}
+
 NostrEmitter.utils = {
     hash,
     getSignKeys,
@@ -443,6 +456,8 @@ NostrEmitter.utils = {
     getRandomString,
     b64encode,
     b64decode,
+    encodeShareLink,
+    decodeShareLink
   }
 
 // Handle exports between browser and node.
