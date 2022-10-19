@@ -90,6 +90,10 @@ class NostrEmitter {
      *  the relay network.
      * */
 
+    if (this.connected) {
+      return
+    }
+
     // If provided, update the current config.
     this.relayUrl = relayUrl || this.relayUrl
     this.secret = secret || this.secret
@@ -202,14 +206,17 @@ class NostrEmitter {
     }
 
     // Decrypt the message content.
-    const { eventName, eventData } = await this.decryptContent(content);
-
+    const decryptedContent = await this.decryptContent(content);
+   
     if (this.opt.verbose) {
-      this.log(eventName + ' event: ' + JSON.stringify(eventData, null, 2))
+      this.log('content: ' + JSON.stringify(decryptedContent, null, 2))
       this.log('metaData: ' + JSON.stringify(metaData, null, 2))
     }
 
-    // Apply the event to our emitter.
+    // Unpack the decrypted content.
+    const { eventName, eventData } = decryptedContent
+
+    // Apply the event to our subscribed functions.
     const allEvents = [
       ...this._getEventListByName(eventName),
       ...this._getEventListByName('all')
