@@ -226,6 +226,7 @@ class NostrEmitter {
   async send(eventName, eventData, eventMsg = { tags: [] }) {
     /** Send a data message to the relay. */
     const serialData = JSONencode({ eventName, eventData });
+    
     const event = {
       content    : await encrypt(serialData, this.keys.shared),
       created_at : Math.floor(Date.now() / 1000),
@@ -259,17 +260,17 @@ class NostrEmitter {
     ]);
 
     // Append event ID and signature
-    event.id = await new hash(eventData).hex();
-    event.sig = await sign(event.id, this.keys.priv);
+    event.id = await new hash(eventData).hex()
+    event.sig = await sign(event.id, this.keys.priv)
 
     // Verify that the signature is valid.
     if (!verify(event.sig, event.id, event.pubkey)) {
-      throw 'event signature failed verification!';
+      throw 'event signature failed verification!'
     }
 
     // If the signature is returned in bytes, convert to hex.
     if (event.sig instanceof Uint8Array) {
-      event.sig = bytesToHex(event.sig);
+      event.sig = bytesToHex(event.sig)
     }
 
     return event;
@@ -297,57 +298,66 @@ class NostrEmitter {
     const self = this;
 
     const onceFn = function (...args) {
-      self.remove(eventName, onceFn);
-      fn.apply(self, args);
+      self.remove(eventName, onceFn)
+      fn.apply(self, args)
     };
 
-    this.on(eventName, onceFn);
+    this.on(eventName, onceFn)
   }
 
   within(eventName, fn, timeout) {
     /** Subscribe function to run within a given,
      *  amount of time, then cancel the subscription.
      * */
-    setTimeout(() => this.remove(eventName, fn), timeout)
-    this.on(eventName, fn)
+    const withinFn = (...args) => fn.apply(this, args)
+    setTimeout(() => this.remove(eventName, withinFn), timeout)
+    
+    this.on(eventName, withinFn)
   }
 
   emit(eventName, args, eventMsg) {
     /** Emit a series of arguments for the event, and
      *  present them to each subscriber in the list.
      * */
-    this.send(eventName, args, eventMsg);
+    this.send(eventName, args, eventMsg)
   }
 
   remove(eventName, fn) {
     /** Remove function from an event's subscribtion list. */
-    this._getEventListByName(eventName).delete(fn);
+    this._getEventListByName(eventName).delete(fn)
+  }
+
+  close() {
+    this.emit('close', this.id)
+    this.socket.close()
+    this.connected = false
+    this.subscribed = false
   }
 }
 
 /** Crypto library. */
 
 async function sha256(raw) {
-  return crypto.subtle.digest('SHA-256', raw);
+  return crypto.subtle.digest('SHA-256', raw)
 }
 
 class hash {
   /** Digest a message with sha256, using x number of rounds. */
   constructor(str, rounds) {
-    this.raw = ec.encode(str);
-    this.num = rounds || 1;
+    this.raw = ec.encode(str)
+    this.num = rounds || 1
   }
   async digest() {
     for (let i = 0; i < this.num; i++) {
-      this.raw = await sha256(this.raw);
+      this.raw = await sha256(this.raw)
     }
-    return this.raw;
+    return this.raw
   }
   async hex() {
-    return this.digest().then((hash) => bytesToHex(new Uint8Array(hash)));
+    return this.digest().then((hash) => bytesToHex(new Uint8Array(hash)))
   }
   async bytes() {
-    return this.digest().then((hash) => new Uint8Array(hash));
+    return this.digest().then((hash) => new Uint8Array(hash))
   }
 }
 
@@ -358,7 +368,7 @@ async function getSignKeys(secret) {
   const privateKey = secret
     ? await new hash(secret).bytes()
     : getRandomBytes(32);
-  const publicKey = schnorr.getPublicKey(privateKey);
+  const publicKey = schnorr.getPublicKey(privateKey)
   return [
     bytesToHex(new Uint8Array(privateKey)),
     bytesToHex(new Uint8Array(publicKey)),
