@@ -423,14 +423,16 @@ async function decrypt(encodedText, keyFile) {
 }
 
 function bytesToHex(byteArray) {
-  for (let arr = [], i = 0; i < byteArray.length; i++) {
+  const arr = []
+  for (let i = 0; i < byteArray.length; i++) {
     arr.push(byteArray[i].toString(16).padStart(2, '0'))
   }
   return arr.join('')
 }
 
 function hexToBytes(str) {
-  for (let arr = [], i = 0; i < str.length; i += 2) {
+  const arr = []
+  for (let i = 0; i < str.length; i += 2) {
     arr.push(parseInt(str.substr(i, 2), 16))
   }
   return Uint8Array.from(arr)
