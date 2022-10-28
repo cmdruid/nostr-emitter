@@ -8,13 +8,13 @@ This package is designed to work in both the browser and nodejs.
 ```html
 <!-- Browser import -->
 <script src='https://bundle.run/noble-secp256k1@1.2.14'></script>
-<script src="https://unpkg.com/nostr-emitter"></script>
+<script src="https://unpkg.com/@cmdcode/nostr-emitter"></script>
 ```
 ```js
 // Commonjs import.
-const NostrEmitter = require('nostr-emitter')
+const NostrEmitter = require('@cmdcode/nostr-emitter')
 // ES6 import.
-import NostrEmitter from 'nostr-emitter'
+import NostrEmitter from '@cmdcode/nostr-emitter'
 ```
 
 ## How to use
