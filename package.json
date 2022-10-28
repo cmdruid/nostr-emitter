@@ -1,6 +1,6 @@
 {
-  "name": "nostr-emitter",
-  "version": "1.1.7",
+  "name": "@cmdcode/nostr-emitter",
+  "version": "1.1.8",
   "description": "A simple event emitter, powered by Nostr.",
   "main": "index.js",
   "scripts": {
