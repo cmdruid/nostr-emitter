@@ -198,6 +198,12 @@ class NostrEmitter {
   async eventHandler(data) {
     const { content, ...metaData } = data
 
+    // Verify that the signature is valid.
+    const { id, pubkey, sig } = metaData
+    if (!verify(sig, id, pubkey)) {
+      throw 'Event signature failed verification!'
+    }
+
     // If the event is from ourselves, 
     if (metaData?.pubkey === this.keys.pub) {
       // check the filter rules. 
