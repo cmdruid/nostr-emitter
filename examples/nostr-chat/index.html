@@ -58,9 +58,9 @@
       
       if (!topic) topic = 'general'
 
-      const emitter = new NostrEmitter(relayUrl, topic + secret)
+      const emitter = new NostrEmitter()
 
-      await emitter.connect()
+      await emitter.connect(relayUrl, topic + secret)
 
       emitter.opt.selfPub = true
 
