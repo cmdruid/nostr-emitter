@@ -480,11 +480,11 @@ function getRandomString(size = 16) {
 
 function encodeShareLink(secret, relayUrl) {
   const str = `${secret}@${relayUrl}`
-  return b64encode(str)
+  return b64encode(ec.encode(str))
 }
 
 function decodeShareLink(str) {
-  const decoded = b64decode(str)
+  const decoded = dc.decode(b64decode(str))
   return decoded.split('@')
 }
 
