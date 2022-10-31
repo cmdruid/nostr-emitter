@@ -11,11 +11,11 @@ const crypto = isBrowser ? window.crypto : require('crypto').webcrypto
 
 // Specify our base64 helper functions.
 const b64encode = isBrowser
-  ? (bytes) => btoa(bytesToHex(bytes))
-  : (bytes) => Buffer.from(bytesToHex(bytes)).toString('base64')
+  ? (bytes) => btoa(bytesToHex(bytes)).replace('+', '-').replace('/', '_')
+  : (bytes) => Buffer.from(bytesToHex(bytes)).toString('base64url')
 const b64decode = isBrowser
-  ? (str) => hexToBytes(atob(str))
-  : (str) => hexToBytes(Buffer.from(str, 'base64').toString('utf8'))
+  ? (str) => hexToBytes(atob(str.replace('-', '+').replace('_', '/')))
+  : (str) => hexToBytes(Buffer.from(str, 'base64url').toString('utf8'))
 
 // Specify our text encoders.
 const ec = new TextEncoder()
@@ -56,7 +56,7 @@ class NostrEmitter {
     this.relayUrl = null
     this.secret = null
     this.signSecret = null
-    this.id = getRandomString(16)
+    this.id = getRandomHex(16)
     this.subId = null
     this.opt = { ...DEFAULT_OPT, ...opt }
     this.socket = opt.socket || null
@@ -470,12 +470,12 @@ function getRandomBytes(size = 32) {
   return crypto.getRandomValues(new Uint8Array(size))
 }
 
-function getRandomString(size = 32) {
+function getRandomHex(size = 32) {
   return bytesToHex(getRandomBytes(size))
 }
 
-function getRandomSecret(size = 16) {
-  return b64encode(getRandomString(size * 2))
+function getRandomString(size = 16) {
+  return b64encode(getRandomBytes(size))
 }
 
 function encodeShareLink(secret, relayUrl) {
@@ -499,8 +499,8 @@ NostrEmitter.utils = {
     bytesToHex,
     hexToBytes,
     getRandomBytes,
+    getRandomHex,
     getRandomString,
-    getRandomSecret,
     b64encode,
     b64decode,
     encodeShareLink,
