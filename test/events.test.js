@@ -9,9 +9,9 @@ test('Event Registration', async t => {
   await emitter.connect('wss://nostr-relay.wlvs.space', 'secret-string')
 
   try {
-  t.test('onTest', t => onTest(t, emitter), 'Test .on()')
-  t.test('onceTest', t => onceTest(t, emitter), 'Test .once()')
-  t.test('withinTest', t => withinTest(t, emitter), 'Test .within()')
+    t.test('onTest', t => onTest(t, emitter), 'Test .on()')
+    t.test('onceTest', t => onceTest(t, emitter), 'Test .once()')
+    t.test('withinTest', t => withinTest(t, emitter), 'Test .within()')
   } catch(err) { console.error(err) }
   
   t.teardown(() => {
@@ -26,7 +26,7 @@ async function onTest(t, emitter) {
   emitter.on('onTest', data => state = data)
   emitter.emit('onTest', 'pass 1')
   await sleep(1000)
-  t.equal(state, 'pass 1', 'should update the state.')
+  t.equal('pass 1', state, 'should update the state.')
 }
 
 async function onceTest(t, emitter) {
@@ -38,11 +38,11 @@ async function onceTest(t, emitter) {
 
   emitter.emit('onceTest', 'pass 1')
   await sleep(1000)
-  t.equal(state, 'pass 1', 'should update the state.')
+  t.equal('pass 1', state, 'should update the state.')
 
   emitter.emit('onceTest', 'pass 2')
   await sleep(1000)
-  t.notEqual(state, 'pass 2', 'should fail to update the state.')
+  t.notEqual('pass 2', state, 'should fail to update the state.')
 }
 
 async function withinTest(t, emitter) {
@@ -54,13 +54,13 @@ async function withinTest(t, emitter) {
 
   emitter.emit('withinTest', 'pass 1')
   await sleep(1000)
-  t.equal(state, 'pass 1', 'should update, is within the timeout')
+  t.equal('pass 1', state, 'should update, is within the timeout')
 
   emitter.emit('withinTest', 'pass 2')
   await sleep(1000)
-  t.equal(state, 'pass 2', 'should update, is within the timeout')
+  t.equal('pass 2', state, 'should update, is within the timeout')
 
   emitter.emit('withinTest', 'pass 3')
   await sleep(1000)
-  t.notEqual(state, 'pass 3', 'should fail to update, is outside the timeout')
+  t.notEqual('pass 3', state, 'should fail to update, is outside the timeout')
 }

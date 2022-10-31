@@ -38,8 +38,6 @@ const DEFAULT_OPT = {
 class NostrEmitter {
   // Our main class object.
 
-  static globals = { isBrowser: typeof window !== 'undefined' }
-
   static utils = {}
 
   constructor(opt = {}) {
@@ -78,7 +76,7 @@ class NostrEmitter {
 
     // Define the subscription id as a hash of our unique
     // id, plus the serialized JSON of our filters.
-    const subId = await new hash(this.id + JSONencode(this.filter)).hex()
+    const subId = await Hash.from(this.id + JSONencode(this.filter)).toHex()
     
     // Send our subscription request to the relay.
     const subscription = ['REQ', subId, this.filter]
@@ -128,7 +126,7 @@ class NostrEmitter {
       priv: keys[0],  // Private key.
       pub: keys[1],   // Public key.
       shared: await getSharedKey(this.secret),
-      label: await new hash(this.secret, 2).hex(),
+      label: await Hash.from(this.secret, 2).toHex(),
     }
     
     // Configure our event tags and filter.
@@ -280,7 +278,7 @@ class NostrEmitter {
     ])
 
     // Append event ID and signature
-    event.id = await new hash(eventData).hex()
+    event.id = await Hash.from(eventData).toHex()
     event.sig = await sign(event.id, this.keys.priv)
 
     // Verify that the signature is valid.
@@ -353,31 +351,47 @@ class NostrEmitter {
     this.connected = false
     this.subscribed = false
   }
+
+  getShareLink() {
+    return encodeShareLink(this.secret, this.relayUrl)
+  }
 }
 
 /** Crypto library. */
 
-async function sha256(raw) {
-  return crypto.subtle.digest('SHA-256', raw)
-}
-
-class hash {
+class Hash {
   /** Digest a message with sha256, using x number of rounds. */
-  constructor(str, rounds) {
-    this.raw = ec.encode(str)
-    this.num = rounds || 1
-  }
-  async digest() {
-    for (let i = 0; i < this.num; i++) {
-      this.raw = await sha256(this.raw)
+  constructor(data, rounds = 1) {
+    if (!(data instanceof Uint8Array)) {
+      throw new Error('Must pass an Uint8Array to new Hash object!')
     }
-    return this.raw
+    this.init   = false
+    this.data   = data
+    this.rounds = rounds
   }
-  async hex() {
-    return this.digest().then((hash) => bytesToHex(new Uint8Array(hash)))
+  static from(data, rounds) {
+    if (!(data instanceof Uint8Array)) {
+      data = ec.encode(String(data))
+    }
+    return new Hash(data, rounds)
   }
-  async bytes() {
-    return this.digest().then((hash) => new Uint8Array(hash))
+  
+  async digest() {
+    if (!this.init) {
+      for (let i = 0; i < this.rounds; i++) {
+        this.data = await crypto.subtle.digest('SHA-256', this.data)
+      }
+      this.data = new Uint8Array(this.data)
+      this.init = true
+    }
+  }
+  async toHex() {
+    await this.digest()
+    return bytesToHex(this.data)
+  }
+  async toBytes() {
+    await this.digest()
+    return this.data
   }
 }
 
@@ -386,7 +400,7 @@ async function getSignKeys(secret) {
    *  signing our Nostr messages.
    */
   const privateKey = secret
-    ? await new hash(secret).bytes()
+    ? await Hash.from(secret).toBytes()
     : getRandomBytes(32)
   const publicKey = schnorr.getPublicKey(privateKey)
   return [
@@ -399,7 +413,7 @@ async function getSharedKey(string) {
   /** Derive a shared key-pair and import as a
    *  CryptoKey object (for Webcrypto library).
    */
-  const secret  = await new hash(string).bytes()
+  const secret  = await Hash.from(string).toBytes()
   const options = { name: 'AES-CBC' }
   const usage   = ['encrypt', 'decrypt']
   return crypto.subtle.importKey('raw', secret, options, true, usage)
@@ -429,16 +443,16 @@ async function decrypt(encodedText, keyFile) {
 }
 
 function bytesToHex(byteArray) {
-  const arr = []
-  for (let i = 0; i < byteArray.length; i++) {
+  const arr = []; let i
+  for (i = 0; i < byteArray.length; i++) {
     arr.push(byteArray[i].toString(16).padStart(2, '0'))
   }
   return arr.join('')
 }
 
 function hexToBytes(str) {
-  const arr = []
-  for (let i = 0; i < str.length; i += 2) {
+  const arr = []; let i
+  for (i = 0; i < str.length; i += 2) {
     arr.push(parseInt(str.substr(i, 2), 16))
   }
   return Uint8Array.from(arr)
@@ -460,22 +474,22 @@ function getRandomString(size = 32) {
   return bytesToHex(getRandomBytes(size))
 }
 
+function getRandomSecret(size = 16) {
+  return b64encode(getRandomString(size * 2))
+}
+
 function encodeShareLink(secret, relayUrl) {
   const str = `${secret}@${relayUrl}`
-  return (NostrEmitter.globals.isBrowser)
-    ? btoa(str)
-    : Buffer.from(str, 'utf8').toString('base64')
+  return b64encode(str)
 }
 
 function decodeShareLink(str) {
-  const decoded = (NostrEmitter.globals.isBrowser)
-    ? atob(str)
-    : Buffer.from(str, 'base64').toString('utf8')
+  const decoded = b64decode(str)
   return decoded.split('@')
 }
 
 NostrEmitter.utils = {
-    hash,
+    Hash,
     getSignKeys,
     getSharedKey,
     encrypt,
@@ -486,6 +500,7 @@ NostrEmitter.utils = {
     hexToBytes,
     getRandomBytes,
     getRandomString,
+    getRandomSecret,
     b64encode,
     b64decode,
     encodeShareLink,
