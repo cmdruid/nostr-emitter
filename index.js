@@ -27,12 +27,13 @@ const JSONdecode = (data) => JSON.parse(data)
 
 // Default options to use.
 const DEFAULT_OPT = {
-  version: 0,      // Protocol version.
-  kind: 29001,     // Default event type.
-  tags: [],        // Global tags for events.
-  selfPub: false,  // React to self-published events.
-  verbose: false,  // Show verbose log output.
-  since: Math.floor(Date.now() / 1000)
+  version : 0,      // Protocol version.
+  kind    : 29001,  // Default event type.
+  tags    : [],     // Global tags for events.
+  selfPub : false,  // React to self-published events.
+  silent  : false,  // Silence noisy output.
+  verbose : false,  // Show verbose log output.
+  since   : Math.floor(Date.now() / 1000)
 }
 
 class NostrEmitter {
@@ -51,22 +52,25 @@ class NostrEmitter {
       digest: null,
     }
 
-    this.events = { all: new Set() }
-    this.tags = []
-    this.relayUrl = null
-    this.secret = null
+    this.events     = { all: new Set() }
+    this.tags       = []
+    this.relayUrl   = null
+    this.secret     = null
     this.signSecret = null
-    this.id = getRandomHex(16)
-    this.subId = null
-    this.opt = { ...DEFAULT_OPT, ...opt }
-    this.socket = opt.socket || null
-    this.log = (...s) => (opt.log) ? opt.log(...s) : console.log(...s)
+    this.id         = getRandomHex(16)
+    this.subId      = null
+    this.opt        = { ...DEFAULT_OPT, ...opt }
+    this.socket     = opt.socket || null
+    this.log   = (...s) => (opt.log) ? opt.log(...s) : console.log(...s)
+    this.info  = (...s) => (opt.silent) ? null : this.log(...s)
+    this.debug = (...s) => (opt.verbose) ? this.log(...s) : null
 
     this.filter = {
       kinds: [this.opt.kind],
       ...opt.filter,
     }
 
+    // If we specify a custom date filter, apply it here.
     if (this.opt.since) this.filter.since = this.opt.since
   }
 
@@ -89,6 +93,7 @@ class NostrEmitter {
      * */
 
     if (this.connected) {
+      // If we are already connected, return early.
       return
     }
 
@@ -123,10 +128,10 @@ class NostrEmitter {
     const keys = await getSignKeys(this.signSecret)
 
     this.keys = {
-      priv: keys[0],  // Private key.
-      pub: keys[1],   // Public key.
-      shared: await getSharedKey(this.secret),
-      label: await Hash.from(this.secret, 2).toHex(),
+      priv   : keys[0],  // Private key.
+      pub    : keys[1],  // Public key.
+      shared : await getSharedKey(this.secret),
+      label  : await Hash.from(this.secret, 2).toHex(),
     }
     
     // Configure our event tags and filter.
@@ -138,10 +143,10 @@ class NostrEmitter {
       let count = 0, retries = 10
       let interval = setInterval(() => {
         if (this.connected && this.subscribed) {
-          this.log('Connected and subscribed!')
+          this.info('Connected and subscribed!')
           res(clearInterval(interval))
         } else if (count > retries) {
-          this.log('Failed to connect!')
+          this.info('Failed to connect!')
           rej(clearInterval(interval))
         } else {
           count++
@@ -166,7 +171,7 @@ class NostrEmitter {
 
   async openHandler(event) {
     /** Handle the socket open event. */
-    this.log('Socket connected to: ', this.relayUrl)
+    this.info('Socket connected to: ', this.relayUrl)
     this.connected = true
     this.subscribe()
   }
@@ -175,16 +180,14 @@ class NostrEmitter {
     /** Handle the socket message event. */
     const [type, subId, data] = this.decodeEvent(event)
 
-    if (this.opt.verbose) {
-      this.log('messageEvent: ' + JSON.stringify([type, subId, data], null, 2))
-    }
+    this.debug('messageEvent: ' + JSON.stringify([type, subId, data], null, 2))
 
     // Check if event is a response to a subscription.
     if (type === 'EOSE') {
       if (subId !== this.subId) {
         this.subId = subId
         this.subscribed = true
-        this.log('Subscription Id:', this.subId)
+        this.info('Subscription Id:', this.subId)
       }
     }
 
@@ -211,10 +214,8 @@ class NostrEmitter {
     // Decrypt the message content.
     const decryptedContent = await this.decryptContent(content)
    
-    if (this.opt.verbose) {
-      this.log('content: ' + JSON.stringify(decryptedContent, null, 2))
-      this.log('metaData: ' + JSON.stringify(metaData, null, 2))
-    }
+    this.debug('content: ' + JSON.stringify(decryptedContent, null, 2))
+    this.debug('metaData: ' + JSON.stringify(metaData, null, 2))
 
     // If the decrypted content is empty, destroy the event.
     if (!decryptedContent) {
@@ -253,9 +254,7 @@ class NostrEmitter {
       pubkey     : this.keys.pub
     }
 
-    if (this.opt.verbose) {
-      this.log('sendEvent: ' + JSON.stringify(event, null, 2))
-    }
+    this.debug('sendEvent: ' + JSON.stringify(event, null, 2))
 
     // Sign our message.
     const signedEvent = await this.getSignedEvent(event)
