@@ -358,7 +358,7 @@ class NostrEmitter {
 
 /** Crypto library. */
 
-class Hash {
+const Hash = class {
   /** Digest a message with sha256, using x number of rounds. */
   constructor(data, rounds = 1) {
     if (!(data instanceof Uint8Array)) {
@@ -394,7 +394,7 @@ class Hash {
   }
 }
 
-async function getSignKeys(secret) {
+const getSignKeys = async (secret) => {
   /** Generate a pair of schnorr keys for
    *  signing our Nostr messages.
    */
@@ -408,7 +408,7 @@ async function getSignKeys(secret) {
   ]
 }
 
-async function getSharedKey(string) {
+const getSharedKey = async (string) => {
   /** Derive a shared key-pair and import as a
    *  CryptoKey object (for Webcrypto library).
    */
@@ -418,7 +418,7 @@ async function getSharedKey(string) {
   return crypto.subtle.importKey('raw', secret, options, true, usage)
 }
 
-async function encrypt(message, keyFile) {
+const encrypt = async (message, keyFile) => {
   /** Encrypt a message using a CryptoKey object.
    * */
   const iv = crypto.getRandomValues(new Uint8Array(16))
@@ -429,7 +429,7 @@ async function encrypt(message, keyFile) {
   return b64encode(new Uint8Array([...iv, ...cipherBytes]))
 }
 
-async function decrypt(encodedText, keyFile) {
+const decrypt = async (encodedText, keyFile) => {
   /** Decrypt an encrypted message using a CryptoKey object.
    * */
   const bytes = b64decode(encodedText)
@@ -441,7 +441,7 @@ async function decrypt(encodedText, keyFile) {
   return dc.decode(plainText)
 }
 
-function bytesToHex(byteArray) {
+const bytesToHex = (byteArray) => {
   const arr = []; let i
   for (i = 0; i < byteArray.length; i++) {
     arr.push(byteArray[i].toString(16).padStart(2, '0'))
@@ -449,7 +449,7 @@ function bytesToHex(byteArray) {
   return arr.join('')
 }
 
-function hexToBytes(str) {
+const hexToBytes = (str) => {
   const arr = []; let i
   for (i = 0; i < str.length; i += 2) {
     arr.push(parseInt(str.substr(i, 2), 16))
@@ -457,32 +457,32 @@ function hexToBytes(str) {
   return Uint8Array.from(arr)
 }
 
-function sign(msg, key) {
+const sign = (msg, key) => {
   return schnorr.sign(msg, key)
 }
 
-function verify(sig, msgHash, pubKey) {
+const verify = (sig, msgHash, pubKey) => {
   return schnorr.verify(sig, msgHash, pubKey)
 }
 
-function getRandomBytes(size = 32) {
+const getRandomBytes = (size = 32) => {
   return crypto.getRandomValues(new Uint8Array(size))
 }
 
-function getRandomHex(size = 32) {
+const getRandomHex = (size = 32) => {
   return bytesToHex(getRandomBytes(size))
 }
 
-function getRandomString(size = 16) {
+const getRandomString = (size = 16) => {
   return b64encode(getRandomBytes(size))
 }
 
-function encodeShareLink(secret, relayUrl) {
+const encodeShareLink = (secret, relayUrl) => {
   const str = `${secret}@${relayUrl}`
   return b64encode(ec.encode(str))
 }
 
-function decodeShareLink(str) {
+const decodeShareLink = (str) => {
   const decoded = dc.decode(b64decode(str))
   return decoded.split('@')
 }
