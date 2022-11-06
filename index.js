@@ -92,11 +92,6 @@ class NostrEmitter {
      *  the relay network.
      * */
 
-    if (this.connected) {
-      // If we are already connected, return early.
-      return
-    }
-
     // If provided, update the current config.
     this.relayUrl = relayUrl || this.relayUrl
     this.secret = secret || this.secret
