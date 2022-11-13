@@ -21,4 +21,7 @@ emitter.on('pong', data => {
 
 await emitter.connect('wss://' + relayUrl, secret)
 
-setInterval(() => emitter.emit('ping', 'ping!'), 5000)
+setInterval(() => {
+  console.log('Sending ping ...')
+  emitter.emit('ping', 'ping!')
+}, 5000)
