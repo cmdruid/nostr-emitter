@@ -1,7 +1,12 @@
+/* Basic connection between two nodes. 
+ * Start command in terminal:
+ *   SECRET_KEY=<your key> node client.mjs
+ */
+
 import NostrEmitter from '../../index.js'
 
 const relayUrl = 'nostr-relay.wlvs.space'
-const secret   = 'supersecretstring'
+const secret   = process.env.SECRET_KEY
 
 const emitter = new NostrEmitter()
 
