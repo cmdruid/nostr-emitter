@@ -56,12 +56,15 @@ client.on('ready', (emitter) => {
   // The ready event will also pass down an emitter object
   // to use for broadcasting and listening to subscribed events.
 
-  // Example of broadcasting an event.
-  emitter.relay('helloEvent', { name: 'Bob', location: 'Panama' })
+  // Example of listening for an event.
+  emitter.on('helloEvent', (data, event) => {
+    console.log(`Hello from ${data.name} in ${data.location}!`)
+    console.log(`Sent from pubkey: ${event.pubkey}`)
+  })
 })
 ```
 
-Once we have a client configured, it is easy to connect and subscribe to a relay.
+Once we have the client configured, it's easy to connect and subscribe to a relay.
 
 ```ts
 // The address of the relay.
@@ -72,15 +75,13 @@ const address = 'wss://relay-pub.deschooling.us'
 // address is used as a default unencrypted channel.
 const secret = 'thisisatestpleaseignore'
 
-// The connect method returns an emitter object for our events.
+// The connect method also returns an emitter object for our events.
 const emitter = await client.connect(address, secret)
 
-// Register an event listener.
-emitter.on('helloEvent', (data, event) => {
-  console.log(`Hello from ${data.name} in ${data.location}!`)
-  console.log(`Sent from pubkey: ${event.pubkey}`)
-})
+// Example of relaying an event to other clients.
+emitter.relay('helloEvent', { name: 'Bob', location: 'Panama' })
 ```
+
 The client is also configurable with a few options.
 
 ```ts
