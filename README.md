@@ -15,6 +15,9 @@ This package is designed to work in both the browser and nodejs.
 ```html
 <!-- Browser import -->
 <script src="https://unpkg.com/@cmdcode/nostr-emitter"></script>
+<script type="module"> 
+  const { NostrClient } = window.nostrEmitter
+</script>
 ```
 ```js
 // Commonjs import.
