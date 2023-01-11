@@ -3,7 +3,7 @@
  *   SECRET_KEY=<your key> node client.mjs
  */
 
-import { NostrClient, KeyPair } from '../../dist/module.js'
+import { NostrClient, KeyPair } from '@cmdcode/nostr-emitter'
 
 const { prvkey } = KeyPair.random()
 const client = new NostrClient(prvkey, { selfsub : true })
@@ -14,13 +14,7 @@ client.on('ready', emitter => {
 
   emitter.on('ping', data => {
     console.log('Received:', data)
-    emitter.emit('pong', 'pong!')
   })
-
-  emitter.on('pong', data => {
-    console.log('Received:', data)
-  })
-
 })
 
 const address = 'wss://relay-pub.deschooling.us'

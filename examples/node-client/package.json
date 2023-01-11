@@ -1,0 +1,16 @@
+{
+  "name": "node-client",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Example of running a client in nodejs.",
+  "main": "client.mjs",
+  "repository": "https://github.com/cmdruid/nostr-emitter",
+  "author": "Christopher Scott",
+  "license": "MIT",
+  "scripts": {
+    "start": "node client.mjs"
+  },
+  "dependencies": {
+    "@cmdcode/nostr-emitter": "^2.0.0"
+  }
+}
