@@ -1,3 +1,40 @@
-node_modules
-.env
-.env.local
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# nyc
+coverage
+.nyc_output
+
+# Dependency directories
+node_modules/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# NPM config
+.npmrc
+
+# Env config
+.env*
+
+# Distributions
+dist
+
+#VSCode
+.vscode

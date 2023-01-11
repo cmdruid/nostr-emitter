@@ -1,72 +1,111 @@
 # nostr-emitter
-A basic peer-to-peer event emitter, built on the Nostr protocol.
+An end-to-end group encrypted event emitter, built on the Nostr protocol.
 
+Features:
+ - Create encrypted channels between clients using a shared secret.
+ - Send packets of data to everyone using simple pub/sub events.
+ - Customize and broadcast any kind of event. Create your own protocol.
+ - Specify a type and get type-checking on all emitted events.
+ - Runs in node and the browser with very minimal dependencies (2).
+ - Coming soon: Middleware and run-time schema validation (via zod).
 
 ## Installation
 This package is designed to work in both the browser and nodejs.
 
 ```html
 <!-- Browser import -->
-<script src='https://bundle.run/noble-secp256k1@1.2.14'></script>
 <script src="https://unpkg.com/@cmdcode/nostr-emitter"></script>
 ```
 ```js
 // Commonjs import.
-const NostrEmitter = require('@cmdcode/nostr-emitter')
+const { NostrClient } = require('@cmdcode/nostr-emitter')
 // ES6 import.
-import NostrEmitter from '@cmdcode/nostr-emitter'
+import { NostrClient } from '@cmdcode/nostr-emitter'
 ```
 
-## How to use
-To get started, simply provide a relay server and shared secret to use, then run `emitter.connect()`.
+## How to Use
+To get started, we will first configure a client.
 
-Once connected, the emitter behaves like a typical EventEmitter object.
-```js
-// Declare a new event emitter object.
-const emitter = new NostrEmitter()
+```ts
+// Import the client and Keypair utility.
+import { NostrClient, KeyPair } from '../src/index.js'
 
-// Connect your emitter to the relay.
-await emitter.connect(
-  'wss://nostr-relay.wlvs.space',
-  'secret-string'
-)
+// Example of importing a keypair from a simple passphrase. 
+// There are many key import options available.
+const { prvkey, pubkey } = KeyPair.fromSecret('hunter2')
+
+// Optional: We can define a type for our event!
+type Greeting = { name : string, location  : string }
+
+// Optional: Self-published events are filtered out 
+// by default. Let's enable them for demonstration.
+const config = { selfsub: true }
+
+// Now we can create a type-safe nostr client.
+const client = new NostrClient<Greeting>(prvkey, config)
+
+client.on('ready', (emitter) => {
+  // The ready event is emitted by the client once
+  // it is connected and subscribed to a relay.
+
+  console.log('Connected to ' + emitter.client.address)
+
+  // The ready event will also pass down an emitter object
+  // to use for broadcasting and listening to subscribed events.
+
+  // Example of broadcasting an event.
+  emitter.relay('helloEvent', { name: 'Bob', location: 'Panama' })
+})
+```
+
+Once we have a client configured, it is easy to connect and subscribe to a relay.
+
+```ts
+// The address of the relay.
+const address = 'wss://relay-pub.deschooling.us'
+
+// Optional: You can provide a shared secret used to establish 
+// an encrypted channel. If none is specified, then the relay 
+// address is used as a default unencrypted channel.
+const secret = 'thisisatestpleaseignore'
+
+// The connect method returns an emitter object for our events.
+const emitter = await client.connect(address, secret)
 
 // Register an event listener.
-emitter.on('some-event', eventData => {
-  console.log('Hello ', eventData)
+emitter.on('helloEvent', (data, event) => {
+  console.log(`Hello from ${data.name} in ${data.location}!`)
+  console.log(`Sent from pubkey: ${event.pubkey}`)
 })
+```
+The client is also configurable with a few options.
 
-// Publish events like any other emitter.
-emitter.emit('some-event', 'world!')
-
-// Self-published events are filtered out 
-// by default, but you can enable them.
-emitter.opt.selfPub = true
-
-// Specify optional parameters.
-const emitter = new NostrEmitter({
-  version : 0,          // Nostr protocol version.
-  kind    : 29001,      // Default event type (ephemeral).
-  selfPub : false,      // Filter self-published events.
-  socket  : WebSocket,  // Specify your own websocket object.
-  tags    : [],         // Add your own tags to each message.
-  filter  : {}          // Add your own subscription filters.
-})
+```ts
+// Specify default parameters for events.
+export interface Config {
+  kind    ?: number
+  tags    ?: string[][]
+  filter  ?: Filter
+  selfsub ?: boolean
+}
 ```
 
 
 ## How it works
-The contents of each event is end-to-end encrypted using a hash of the shared secret, then the event itself is tagged with a double-hash of the secret. 
 
-Events are filtered by this hash-tag, so each emitter will only see events tagged with the proper hash. Old events are also filtered out by default.
+The client works as typical nostr client. You can send messages to relays, and subscribe to message filters. When a type is provided to the client, the `content` field on event messages will be checked by typescript, and the event bus will also be type-guarded.
 
-Everything else works like a basic event emitter API. Methods include 'on', 'once', 'emit' and 'remove'.
+When a shared secret is provided for encryption, a hash of the secret is used to generate the encryption key. The contents of each event are end-to-end encrypted using AES, and the event message is tagged with a hash of the encryption key. This hashtag is added to the subscription, so that each emitter will only see events tagged with the proper hash. Consider it an easy way to setup encrypted channels between emitters!
+
+Everything else works like a basic event emitter API. Methods include 'on', 'once', 'emit' (local), 'relay' (broadcast) and 'remove'.
 
 Some helpful tips:
 * For public channels, the shared secret can be something obvious, like 'general-chat'.
-* For organizing groups or channels, try using paths as a secret string: 'secret/topic/subtopic'
-* You can change the default emitter.filter before calling emitter.connect().
-* The main index.js file is less than 400 lines of code. Feel free to change it as you wish!
+* For organizing channel hierarchies, try using paths in the shared secret i.e 'secret/topic/subtopic'.
+* You can customize the default tags and filter used by the client for publishing / subscribing.
+* When sendind a message, you can provide a custom template that overrides the defaults.
+* You can use the 'any' event name to listen to all events.
+* The client emits log messages under 'info', 'debug', and 'error'.
 
 
 ## Resources

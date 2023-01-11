@@ -1,11 +1,8 @@
 {
   "name": "@cmdcode/nostr-emitter",
-  "version": "1.1.15",
   "description": "A simple event emitter, powered by Nostr.",
-  "main": "index.js",
-  "scripts": {
-    "test": "tape test/*.js"
-  },
+  "author": "Christopher Scott",
+  "license": "CC-BY-1.0",
   "keywords": [
     "event",
     "emitter",
@@ -13,23 +10,62 @@
     "sub",
     "nostr"
   ],
-  "author": "Christopher Scott",
-  "license": "CC-BY-1.0",
-  "repository": "https://github.com/cmdruid/nostr-emitter.git",
+  "version": "1.2.0",
+  "type": "module",
+  "main": "./dist/main.js",
+  "unpkg": "./dist/bundle.min.js",
+  "types": "./dist/types/index.d.ts",
+  "files": [
+    "README.md",
+    "LICENSE",
+    "dist"
+  ],
+  "exports": {
+    "import": "./dist/module.js",
+    "require": "./dist/main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cmdruid/nostr-emitter.git"
+  },
   "publishConfig": {
     "registry": "https://registry.npmjs.org",
     "access": "public"
+  },
+  "scripts": {
+    "build": "rollup -c rollup.config.ts --configPlugin typescript",
+    "clean": "rm -rf dist/* coverage .nyc_output",
+    "start": "node --loader ts-node/esm --no-warnings",
+    "scratch": "yarn start test/scratch.ts",
+    "lint": "eslint . --ext .ts",
+    "fix": "eslint --fix . --ext .ts",
+    "tape": "yarn start test/events.test.ts",
+    "test": "nyc --reporter=lcov --require ts-node/register yarn tape | tap-spec; nyc report ---reporter=text",
+    "types": "tsc",
+    "release": "yarn test && yarn clean && yarn types && yarn lint && yarn build"
   },
   "dependencies": {
     "@noble/secp256k1": "^1.2.14",
     "ws": "^8.9.0"
   },
-  "files": [
-    "index.js",
-    "README.md",
-    "LICENSE"
-  ],
   "devDependencies": {
-    "tape": "^5.6.1"
+    "@rollup/plugin-commonjs": "^23.0.2",
+    "@rollup/plugin-node-resolve": "^15.0.1",
+    "@rollup/plugin-typescript": "^9.0.2",
+    "@types/tape": "^4.13.2",
+    "@types/ws": "^8.5.4",
+    "@typescript-eslint/eslint-plugin": "^5.48.0",
+    "eslint": "^8.31.0",
+    "eslint-config-standard-with-typescript": "^26.0.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-n": "^15.6.0",
+    "eslint-plugin-promise": "^6.1.1",
+    "nyc": "^15.1.0",
+    "rollup": "^3.2.3",
+    "rollup-plugin-terser": "^7.0.2",
+    "tap-spec": "^5.0.0",
+    "tape": "^5.6.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.9.4"
   }
 }
