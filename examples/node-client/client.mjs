@@ -3,25 +3,31 @@
  *   SECRET_KEY=<your key> node client.mjs
  */
 
-import NostrEmitter from '../../index.js'
+import { NostrClient, KeyPair } from '../../dist/module.js'
 
-const relayUrl = 'nostr-relay.wlvs.space'
-const secret   = process.env.SECRET_KEY
+const { prvkey } = KeyPair.random()
+const client = new NostrClient(prvkey, config)
 
-const emitter = new NostrEmitter()
+client.on('ready', emitter => {
 
-emitter.on('ping', data => {
-  console.log('Received:', data)
-  emitter.emit('pong', 'pong!')
+  console.log('Connected to ' + emitter.client.address)
+
+  emitter.on('ping', data => {
+    console.log('Received:', data)
+    emitter.emit('pong', 'pong!')
+  })
+
+  emitter.on('pong', data => {
+    console.log('Received:', data)
+  })
+
 })
 
-emitter.on('pong', data => {
-  console.log('Received:', data)
-})
-
-await emitter.connect('wss://' + relayUrl, secret)
+const address = 'wss://relay-pub.deschooling.us'
+const secret  = process.env.SECRET_KEY
+const emitter = await client.connect(address, secret)
 
 setInterval(() => {
   console.log('Sending ping ...')
-  emitter.emit('ping', 'ping!')
+  emitter.relay('ping', 'ping!')
 }, 5000)

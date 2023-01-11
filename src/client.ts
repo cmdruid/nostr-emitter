@@ -1,9 +1,8 @@
-import WebSocket   from 'ws'
-
-import { Cipher }  from './cipher.js'
-import { Hex, Text }     from './format.js'
-import { Hash }    from './hash.js'
-import { KeyPair } from './keypair.js'
+import WebSocket       from 'ws'
+import { Cipher }      from './cipher.js'
+import { Hex, Text }   from './format.js'
+import { Hash }        from './hash.js'
+import { KeyPair }     from './keypair.js'
 import { SignedEvent } from './event.js'
 
 import {
@@ -117,7 +116,7 @@ export class NostrClient<T = Json> extends EventEmitter<any> {
           }
           if (type === 'EVENT') {
             // add a pipe here :-)
-            const event = message[2]
+            const event  = message[2]
             const signed = new SignedEvent(event, this)
             this.emit('info', `[ Socket ] Incoming Event: ${JSON.stringify(event, null, 2)}`)
             void this.eventHandler(signed)
@@ -224,9 +223,7 @@ export class NostrClient<T = Json> extends EventEmitter<any> {
     })
   }
 
-  public subscribe (
-    filter : Filter = this.filter
-  ) : void {
+  public subscribe (filter : Filter = this.filter) : void {
     /** Send a subscription message to the socket peer.
      * */
     const subId   = Hex.random(32)
@@ -241,13 +238,13 @@ export class NostrClient<T = Json> extends EventEmitter<any> {
   }
 
   public async relay (
-    eventName : string | null,
+    key       : string | null,
     content   : T | string,
     template  : EventDraft<T> = { tags: [] }
   ) : Promise<void> {
     /** Send a data message to the relay. */
-    if (eventName !== null) {
-      content = JSON.stringify([ eventName, content ])
+    if (key !== null) {
+      content = JSON.stringify([ key, content ])
     }
 
     if (typeof content !== 'string') {
@@ -270,7 +267,7 @@ export class NostrClient<T = Json> extends EventEmitter<any> {
 
   async send (event : EventTemplate) : Promise<void> {
     // Sign our message.
-    const signedEvent = await this.signEvent(event)
+    const signedEvent = await this.sign(event)
 
     // Serialize and send our message.
     const message = JSON.stringify([ 'EVENT', signedEvent ])
@@ -279,7 +276,7 @@ export class NostrClient<T = Json> extends EventEmitter<any> {
     this.emit('sent', signedEvent)
   }
 
-  async signEvent (event : EventTemplate) : Promise<Event> {
+  async sign (event : EventTemplate) : Promise<Event> {
     /** Produce a signed hash of our event,
      *  then attach it to the event object.
      * */
