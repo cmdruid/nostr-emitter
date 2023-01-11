@@ -10,6 +10,6 @@
     "start": "node --no-warnings app.js"
   },
   "dependencies": {
-    "nostr-emitter": "^1.0.12"
+    "nostr-emitter": "^1.1.15"
   }
 }

@@ -7,7 +7,7 @@ const { schnorr } = isBrowser
   : require('@noble/secp256k1')
 
 const WebSocket = isBrowser ? window.WebSocket : require('ws')
-const crypto = isBrowser ? window.crypto : require('crypto').webcrypto
+const crypto    = isBrowser ? window.crypto    : require('crypto').webcrypto
 
 // Specify our base64 helper functions.
 const b64encode = isBrowser

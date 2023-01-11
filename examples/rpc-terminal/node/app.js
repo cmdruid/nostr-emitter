@@ -1,5 +1,5 @@
-import rpc from './lib/rpc.js'
-import NostrEmitter from '../../../index.js'
+import NostrEmitter        from '@cmdcode/nostr-emitter'
+import rpc                 from './lib/rpc.js'
 import { getRandomBase64 } from './lib/crypto.js'
 
 const relayUrl = 'nostr-relay.wlvs.space'

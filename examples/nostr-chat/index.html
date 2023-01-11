@@ -11,18 +11,18 @@
   <div>
     <h1>NostrEmitter Demo</h1>
     <div class="container">
+      <div class="chat-status">
+      </div>
+    </div>
+    <div class="container">
       <form id="config">
         <div class="form-field">
           <label>Relay Address</label>
-          <input name="relayUrl" value="" placeholder="enter relay url ...">
+          <input name="address" value="" placeholder="enter relay url ...">
         </div>
         <div class="form-field">
-          <label>Topic</label>
+          <label>Channel Topic</label>
           <input name="topic" value="" placeholder="enter topic ...">
-        </div>
-        <div class="form-field">
-          <label>Password</label>
-          <input name="secret" value="" placeholder="enter secret password ...">
         </div>
         <button type="submit">Connect</button>
       </form>
@@ -39,47 +39,63 @@
       </form> 
     </div>
   </div>
-  <script src='https://bundle.run/noble-secp256k1@1.2.14'></script>
-  <script src='https://unpkg.com/@cmdcode/nostr-emitter'></script>
-  <!-- <script src="../../index.js"></script> -->
+  <!-- <script src='https://unpkg.com/@cmdcode/nostr-emitter'></script> -->
+  <script src="../../dist/bundle.min.js"></script>
   <script type="module">
-    const DEFAULT_RELAY_URL = 'wss://nostr-relay.wlvs.space'
+    const DEFAULT_RELAY_URL = 'wss://relay-pub.deschooling.us'
+    const { NostrClient, KeyPair } = window.nostrEmitter
+    const { prvkey, pubkey }       = KeyPair.random()
 
     const configForm = document.querySelector('#config'),
+          statusBox  = document.querySelector('.chat-status'),
           msgBox     = document.querySelector('.chat-box'),
           sendBox    = document.querySelector('.send-box'),
-          relayAddr  = document.querySelector('input[name="relayUrl"]')
+          relayAddr  = document.querySelector('input[name="address"]')
 
     if (!relayAddr.getAttribute('value')) relayAddr.setAttribute('value', DEFAULT_RELAY_URL)
 
     configForm.addEventListener('submit', async (e) => {
       e.preventDefault()
 
-      let { relayUrl, topic, secret } = Object.fromEntries(new FormData(e.target))
+      let { address, topic } = Object.fromEntries(new FormData(e.target))
+
+      console.log(address, topic)
       
       if (!topic) topic = 'general'
 
-      const emitter = new NostrEmitter()
+      const client  = new NostrClient(prvkey, { selfsub : true })
 
-      await emitter.connect(relayUrl, topic + secret)
+      client.on('ready', (emitter) => {
+        // statusBox.innerText = `Connected`
 
-      emitter.opt.selfPub = true
+        console.log('Connected to', emitter.client.address)
 
-      emitter.on('chatmsg', (event, meta) => {
-        const name = (meta.pubkey === emitter.keys.pub)
-          ? 'me'
-          : meta.pubkey.slice(-6)
-        post(name, event.data)
-        console.log(event, meta)
+        emitter.on('join', (_, event) => {
+          if (!event.isAuthor) join(event.pubkey)
+        })
+
+        emitter.on('chatmsg', (content, event) => {
+          const name = (event.isAuthor) ? 'me' : event.pubkey.slice(-6)
+          post(name, content)
+        })
+        emitter.relay('join')
       })
+
+      const emitter = await client.connect(address, topic)
 
       sendBox.addEventListener('submit', (e) => {
         e.preventDefault()
         const { message } = Object.fromEntries(new FormData(e.target))
-        emitter.emit('chatmsg', { data: message })
+        emitter.relay('chatmsg', message)
         clearInput()
       })
     })
+
+    function join(name) {
+      const message = document.createElement('pre')
+      message.innerText = `${name.slice(-6)} has entered the chat.`
+      msgBox.appendChild(message)
+    }
 
     function post(name, msg) {
       const message = document.createElement('pre')
