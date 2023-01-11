@@ -6,7 +6,7 @@
 import { NostrClient, KeyPair } from '../../dist/module.js'
 
 const { prvkey } = KeyPair.random()
-const client = new NostrClient(prvkey, config)
+const client = new NostrClient(prvkey, { selfsub : true })
 
 client.on('ready', emitter => {
 
