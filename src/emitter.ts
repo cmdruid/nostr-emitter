@@ -6,9 +6,6 @@
  *
  * */
 
-import { NostrClient }   from './client.js'
-import { EventEnvelope, Json } from './types.js'
-
 type EventParams<T> = T & unknown[]
 type EventMethod<T> = (...args : EventParams<T>) => void | Promise<void>
 type FunctionSet<T> = Set<EventMethod<T>>
@@ -84,26 +81,5 @@ export class EventEmitter<T = unknown[]> {
   public remove (eventName : string, fn : EventMethod<T>) : void {
     /** Remove function from an event's subscribtion list. */
     this._getFn(eventName).delete(fn)
-  }
-}
-
-export class NostrEmitter<T = Json> extends EventEmitter<EventEnvelope<T>> {
-  private readonly client : NostrClient<any>
-
-  constructor (client : NostrClient<T>) {
-    super()
-    this.client = client
-  }
-
-  get relay () : typeof this.client.relay {
-    return this.client.relay.bind(this.client)
-  }
-
-  get subscribe () : typeof this.client.subscribe {
-    return this.client.subscribe.bind(this.client)
-  }
-
-  get cancel () : typeof this.client.cancel {
-    return this.client.cancel.bind(this.client)
   }
 }

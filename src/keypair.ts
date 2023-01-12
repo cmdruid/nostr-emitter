@@ -25,7 +25,7 @@ async function verify (
 export class KeyPair {
   private readonly secret : Uint8Array
 
-  static random () : KeyPair {
+  public static random () : KeyPair {
     return new KeyPair(Hex.random(32))
   }
 
@@ -43,15 +43,15 @@ export class KeyPair {
     this.secret = Hex.normalize(bytes)
   }
 
-  get prvkey () : string {
+  public get prvkey () : string {
     return Hex.encode(this.secret)
   }
 
-  get pubraw () : Uint8Array {
+  public get pubraw () : Uint8Array {
     return schnorr.getPublicKey(this.secret)
   }
 
-  get pubkey () : string {
+  public get pubkey () : string {
     return Hex.encode(this.pubraw)
   }
 

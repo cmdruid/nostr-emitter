@@ -1,50 +1,49 @@
-import WebSocket       from 'ws'
-import { Cipher }      from './cipher.js'
-import { Hex, Text }   from './format.js'
-import { Hash }        from './hash.js'
-import { KeyPair }     from './keypair.js'
-import { SignedEvent } from './event.js'
+import WebSocket        from 'ws'
+import { Hex }          from './format.js'
+import { Hash }         from './hash.js'
+import { KeyPair }      from './keypair.js'
+import { SignedEvent }  from './event.js'
+import { Subscription } from './subscription.js'
+import { EventEmitter } from './emitter.js'
 
-import {
-  EventEmitter,
-  NostrEmitter
-} from './emitter.js'
+import { 
+  Transformer, 
+  Middleware 
+} from './transformer.js'
 
 import {
   Config,
   Event,
   EventDraft,
-  ContentEnvelope,
   EventTemplate,
   Filter,
   Json,
   Options,
-  Tag
+  Tag,
+  AckEnvelope,
+  Sorter
 } from './types.js'
+import { validateEvent } from './middleware/default.js'
 
 // Default options to use.
 const DEFAULT_OPT = {
   kind    : 29001,  // Default event type.
   tags    : [],     // Global tags for events.
   selfsub : false,  // React to self-published events.
-  silent  : false,  // Silence noisy output.
-  verbose : false,  // Show verbose log output.
+  timeout : 5000,   // Timeout on relay events.
   filter  : { since: Math.floor(Date.now() / 1000) }
 }
 
-export class NostrClient<T = Json> extends EventEmitter<any> {
+export class NostrClient extends EventEmitter<any> {
   // Our main class object.
 
-  private readonly keypair : KeyPair
-  public  readonly event   : NostrEmitter<T>
+  private readonly keypair    : KeyPair
+  public  readonly id         : string
+  public  readonly subs       : Map<string, Subscription<any>>
+  public  readonly middleware : Transformer<SignedEvent>
 
-  private secret     ?: Uint8Array
-  public  hashtag    ?: string
   public  address    ?: string
   public  socket     ?: WebSocket
-  public  subId      ?: string
-  public  connected   : boolean
-  public  subscribed  : boolean
   public  filter      : Filter
   public  options     : Options
   public  tags        : Tag[][]
@@ -54,17 +53,26 @@ export class NostrClient<T = Json> extends EventEmitter<any> {
     options ?: Config
   ) {
     super()
+    this.id         = Hex.random(32)
     this.keypair    = new KeyPair(passkey)
-    this.event      = new NostrEmitter(this)
-    this.connected  = false
-    this.subscribed = false
-
+    this.subs       = new Map()
+    this.middleware = new Transformer()
     this.options    = { ...DEFAULT_OPT, ...options }
     this.tags       = this.options.tags
     this.filter     = {
       kinds: [ this.options.kind ],
       ...this.options.filter
     }
+
+    this.middleware.use(validateEvent)
+    this.middleware.catch((err) => this.emit('error', err))
+  }
+
+  get connected () : boolean {
+    return (
+      this.socket !== undefined &&
+      this.socket.readyState === 1
+    )
   }
 
   get prvkey () : string {
@@ -75,27 +83,39 @@ export class NostrClient<T = Json> extends EventEmitter<any> {
     return this.keypair.pubkey
   }
 
-  get cipher () : Cipher | undefined {
-    return (this.secret !== undefined)
-      ? new Cipher(this.secret)
-      : undefined
-  }
-
   get ready () : boolean {
     return this.socket?.readyState === 1
+  }
+
+  private socketHandler(address : string) : void {
+    this.address = (address.includes('wss://'))
+        ? address
+        : 'wss://' + address
+
+    this.socket = new WebSocket(this.address)
+
+    this.socket.addEventListener(
+      // Listener for the websocket open event.
+      'open', (event : WebSocket.Event) => { this.openHandler(event) }
+    )
+
+    this.socket.addEventListener(
+      // Listener for the websocket message event.
+      'message', (event : WebSocket.MessageEvent) => { this.messageHandler(event) }
+    )
   }
 
   private openHandler (_event : WebSocket.Event) : void {
     /** Handle the websocket open event.
      */
+    this.emit('ready', this)
     this.emit('info', `Connected to ${String(this.address)}`)
-    this.connected = true
-    this.subscribe()
   }
 
-  private messageHandler ({ data } : WebSocket.MessageEvent) : void {
-     /** Handle the websocket message event.
-      */
+  private async messageHandler (
+    { data } : WebSocket.MessageEvent
+  ) : Promise<void> {
+     /** Handle the websocket message event. */
     try {
       if (typeof data !== 'string') {
         data = data.toString('utf8')
@@ -108,175 +128,129 @@ export class NostrClient<T = Json> extends EventEmitter<any> {
 
       if (type === 'EOSE' || type === 'EVENT') {
         const subId = String(message[1])
-        if (subId === this.subId) {
-           if (type === 'EOSE') {
-            this.subscribed = true
+        if (this.subs.has(subId)) {
+          if (type === 'EOSE') {
+            this.emit('eose', subId)
             this.emit('info', `[ Socket ] Subscription Id: ${subId}`)
             return
           }
           if (type === 'EVENT') {
-            // add a pipe here :-)
-            const event  = message[2]
-            const signed = new SignedEvent(event, this)
-            this.emit('info', `[ Socket ] Incoming Event: ${JSON.stringify(event, null, 2)}`)
-            void this.eventHandler(signed)
-            return
+            const json  = message[2]
+            const event = new SignedEvent(json, this)
+            const { ok, data } = await this.middleware.apply(event)
+            if (ok) {
+              this.emit(subId, data)
+              this.emit('info', `[ Socket ] Incoming Event: ${JSON.stringify(event, null, 2)}`)
+              return
+            } else { return }
           }
-        } else {
-          this.cancel(subId)
-          return
-        }
+        } else { this.cancel(subId); return }
       }
-
       if (type === 'OK' || type === 'NOTICE') {
         this.emit('info', `[ Socket ] Incoming Message: ${JSON.stringify(message)}`)
         this.emit(type, message.slice(1))
         return
       }
-
       throw TypeError(`Invalid type from relay: ${type}`)
     } catch (err) { this.emit('error', err) }
   }
 
-  async eventHandler (event : SignedEvent<T>) : Promise<void> {
-    // Verify that the signature is valid.
-
-    if (!await event.isValid) {
-      throw TypeError('Event signature failed verification!')
+  private subHandler () : void {
+    for (const sub of this.subs.values()) {
+      if (!sub.subscribed) void sub.connect()
     }
-
-    // If the event is from ourselves, check the filter rules.
-    if (event.isAuthor && !this.options.selfsub) return
-
-    let content : ContentEnvelope<T> | T  | string = event.content
-
-    if (event.isDecipherable) {
-      content = await event.decrypt()
-    }
-
-    if (typeof content === 'string') {
-      content = Text.revive(content)
-    }
-
-    this.emit('debug', content)
-    this.emit('debug', event)
-
-    // If the decrypted content is empty, destroy the event.
-    if (Array.isArray(content)) {
-      // Apply the event to our subscribed functions.
-      const [ eventName, eventData ] = content
-      this.event.emit(eventName, eventData, event)
-    } else { this.event.emit('any', content as T, event) }
   }
 
-  async connect (
-    address : string,
-    secret ?: string
-  ) : Promise<NostrEmitter<T>> {
+  public use (fn : Middleware<SignedEvent<Json>>) : number {
+    /** Add function to client middleware.
+     */
+    return this.middleware.push(fn)
+  }
+
+  public async connect (
+    address ?: string
+  ) : Promise<NostrClient> {
     /** Configure our emitter for connecting to
      *  the relay network.
      * */
 
-    if (address === undefined) {
-      throw new Error('Must provide url to a relay!')
+    if (address !== undefined) {
+      this.socketHandler(address)
     }
 
-    if (secret !== undefined) {
-      this.secret  = await Hash.from(secret).raw
-      this.hashtag = await new Hash(this.secret).hex
-    } else {
-      this.secret  = undefined
-      this.hashtag = await Hash.from(address).hex
+    if (this.address === undefined) {
+      throw new Error('Must provide a url to a relay!')
     }
-
-    this.filter['#h'] = [ this.hashtag ]
-    this.address = (address.includes('wss://')) ? address : 'wss://' + address
-    this.socket  = new WebSocket(this.address)
-
-    this.socket.addEventListener(
-      // Listener for the websocket open event.
-      'open', (event : WebSocket.Event) => { this.openHandler(event) }
-    )
-
-    this.socket.addEventListener(
-      // Listener for the websocket message event.
-      'message', (event : WebSocket.MessageEvent) => { this.messageHandler(event) }
-    )
 
     // Return a promise that includes a timeout.
     return new Promise((resolve, reject) => {
-      let   count    = 0
-      const retries  = 10
-      const interval = setInterval(() => {
-        if (this.connected && this.subscribed) {
-          clearInterval(interval)
-          this.emit('ready', this.event)
-          resolve(this.event)
-        } else if (count > retries) {
-          clearInterval(interval)
-          this.emit('timeout', this)
-          reject(this.address)
-        } else {
-          count++
+      const address = String(this.address)
+      const timeout = this.options.timeout
+      if (this.connected) {
+        this.subHandler()
+        resolve(this)
+      }
+      this.within('ready', client => {
+        if (client.address === address) {
+          this.subHandler()
+          resolve(this)
         }
-      }, 500)
+      }, timeout)
+      setTimeout(() => {
+        reject(Error(`Connection to ${address} timed out!`))
+      }, timeout)
     })
   }
 
-  public subscribe (filter : Filter = this.filter) : void {
+  public subscribe<T = Json> (
+    filter : Filter = this.filter
+  ) : Subscription<T> {
     /** Send a subscription message to the socket peer.
      * */
-    const subId   = Hex.random(32)
-    const message = JSON.stringify([ 'REQ', subId, filter ])
-    this.socket?.send(message)
-    this.subId = subId
+    const sub = new Subscription<T>(filter, this)
+    this.subs.set(sub.id, sub)
+    return sub
   }
 
-  public cancel (subId : string) : void {
+  public async query<T = Json>(
+    filter  : Filter,
+    sorter ?: Sorter<SignedEvent<T>>
+  ) : Promise<SignedEvent<T>[]> {
+    const selection : SignedEvent<T>[] = []
+    const sub = this.subscribe<T>(filter)
+    sub.on('event', (event) => {
+      if (event instanceof SignedEvent) {
+        void selection.push(event)
+      }
+    })
+    await sub.connect()
+    sub.cancel()
+    if (sorter !== undefined) selection.sort(sorter)
+    return selection
+  }
+
+  public cancel (subId : string) : boolean {
     const message = JSON.stringify([ 'CLOSE', subId ])
     this.socket?.send(message)
+    return this.subs.delete(subId)
   }
 
-  public async relay (
-    key       : string | null,
-    content   : T | string,
-    template  : EventDraft<T> = { tags: [] }
-  ) : Promise<void> {
+  public async relay<T = Json> (
+    draft : EventDraft<T>
+  ) : Promise<AckEnvelope | undefined> {
     /** Send a data message to the relay. */
-    if (key !== null) {
-      content = JSON.stringify([ key, content ])
-    }
-
-    if (typeof content !== 'string') {
-      content = JSON.stringify(content)
-    }
-
-    if (this.cipher !== undefined) {
-      content = await this.cipher.encrypt(content)
-      template.tags.push([ 'h', await this.cipher.hashtag ])
-    }
-
     return this.send({
-      content,
+      content    : draft.content,
       created_at : Math.floor(Date.now() / 1000),
-      kind       : template?.kind ?? this.options.kind,
-      tags       : [ ...this.tags, ...template.tags ],
+      kind       : draft?.kind ?? this.options.kind,
+      tags       : [ ...this.tags, ...draft.tags ?? [] ],
       pubkey     : this.pubkey
     })
   }
 
-  async send (event : EventTemplate) : Promise<void> {
-    // Sign our message.
-    const signedEvent = await this.sign(event)
-
-    // Serialize and send our message.
-    const message = JSON.stringify([ 'EVENT', signedEvent ])
-    this.socket?.send(message)
-    this.emit('info', `Sent event: ${JSON.stringify(event, null, 2)}`)
-    this.emit('sent', signedEvent)
-  }
-
-  async sign (event : EventTemplate) : Promise<Event> {
+  public async sign<T = Json> (
+    event : EventTemplate<T>
+  ) : Promise<Event<T>> {
     /** Produce a signed hash of our event,
      *  then attach it to the event object.
      * */
@@ -298,5 +272,27 @@ export class NostrClient<T = Json> extends EventEmitter<any> {
       throw TypeError('Event failed verification!')
     }
     return { ...event, id, sig }
+  }
+
+  public async send<T = Json> (
+    event : EventTemplate<T>
+  ) : Promise<AckEnvelope | undefined> {
+    // Sign our message.
+    const signedEvent = await this.sign(event)
+
+    // Serialize and send our message.
+    const message = JSON.stringify([ 'EVENT', signedEvent ])
+    await this.connect()
+    this.socket?.send(message)
+    this.emit('info', `Sent event: ${JSON.stringify(event, null, 2)}`)
+    this.emit('sent', signedEvent)
+
+    return new Promise((resolve) => {
+      const timeout = this.options.timeout
+      this.within('OK', ack => {
+        if (ack.eventId === signedEvent.id) resolve(ack)
+      }, timeout)
+      setTimeout(() => { resolve(undefined) }, timeout)
+    })
   }
 }
