@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div>
+    <h1>NostrEmitter Demo</h1>
+    <div class="container">
+      <form id="config">
+        <div class="form-field">
+          <label>Relay Address</label>
+          <input name="relayUrl" value="" placeholder="enter relay url ...">
+        </div>
+        <div class="form-field">
+          <label>Topic</label>
+          <input name="topic" value="" placeholder="enter topic ...">
+        </div>
+        <div class="form-field">
+          <label>Password</label>
+          <input name="secret" value="" placeholder="enter secret password ...">
+        </div>
+        <button type="submit">Connect</button>
+      </form>
+    </div>
+    <div class="container">
+      <h2>Messages</h2>
+      <div class="chat-box">
+      </div>
+    </div>
+    <div class="container">
+      <form class="send-box">
+        <input name="message" value="" placeholder="type here ...">
+        <button id="send-button" type="submit">Send</button>
+      </form> 
+    </div>
+  </div>
+  <script src='https://bundle.run/noble-secp256k1@1.2.14'></script>
+  <script src='https://unpkg.com/@cmdcode/nostr-emitter'></script>
+  <!-- <script src="../../index.js"></script> -->
+  <script type="module">
+    const DEFAULT_RELAY_URL = 'wss://nostr-relay.wlvs.space'
+
+    const configForm = document.querySelector('#config'),
+          msgBox     = document.querySelector('.chat-box'),
+          sendBox    = document.querySelector('.send-box'),
+          relayAddr  = document.querySelector('input[name="relayUrl"]')
+
+    if (!relayAddr.getAttribute('value')) relayAddr.setAttribute('value', DEFAULT_RELAY_URL)
+
+    configForm.addEventListener('submit', async (e) => {
+      e.preventDefault()
+
+      let { relayUrl, topic, secret } = Object.fromEntries(new FormData(e.target))
+      
+      if (!topic) topic = 'general'
+
+      const emitter = new NostrEmitter()
+
+      await emitter.connect(relayUrl, topic + secret)
+
+      emitter.opt.selfsub = true
+
+      emitter.on('chatmsg', (event, meta) => {
+        const name = (meta.pubkey === emitter.keys.pub)
+          ? 'me'
+          : meta.pubkey.slice(-6)
+        post(name, event.data)
+        console.log(event, meta)
+      })
+
+      sendBox.addEventListener('submit', (e) => {
+        e.preventDefault()
+        const { message } = Object.fromEntries(new FormData(e.target))
+        emitter.emit('chatmsg', { data: message })
+        clearInput()
+      })
+    })
+
+    function post(name, msg) {
+      const message = document.createElement('pre')
+      message.innerText = `<${name}> ${msg}`
+      msgBox.appendChild(message)
+    }
+
+    function clearInput() {
+      const sendInput = document.querySelector('.send-box input')
+      sendInput.value = ''
+    }
+  </script>
+</body>
+</html>
