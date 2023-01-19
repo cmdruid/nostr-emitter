@@ -6,16 +6,15 @@ const { schnorr } = isBrowser ? window.nobleSecp256k1 : require('@noble/secp256k
 const WebSocket   = isBrowser ? window.WebSocket      : require('ws')
 const crypto      = globalThis.crypto
 
-// Specify our base64 encoders.
+// Define our base64 encoders.
 const b64encode = isBrowser
   ? (bytes) => btoa(bytesToHex(bytes)).replace('+', '-').replace('/', '_')
   : (bytes) => Buffer.from(bytesToHex(bytes)).toString('base64url')
-
 const b64decode = isBrowser
   ? (str) => hexToBytes(atob(str.replace('-', '+').replace('_', '/')))
   : (str) => hexToBytes(Buffer.from(str, 'base64url').toString('utf8'))
 
-// Specify our text encoders.
+// Define our text encoders.
 const ec = new TextEncoder()
 const dc = new TextDecoder()
 
@@ -30,13 +29,12 @@ const DEFAULT_OPT = {
 }
 
 class NostrEmitter {
-
   constructor(opt = {}) {
     this.connected  = false
     this.subscribed = false
-    this.subId      = getRandomHex(16)
     this.events     = {}
     this.tags       = []
+    this.subId      = getRandomHex(16)
     this.privkey    = opt.privkey || getRandomHex(32)
     this.opt        = { ...DEFAULT_OPT, ...opt }
     this.filter     = { kinds: [ this.opt.kind ], ...opt.filter }
@@ -46,6 +44,7 @@ class NostrEmitter {
   }
 
   async importSeed(string) {
+    /** Import private key from a seed phrase. */
     this.privkey = await Hash.from(string).toBytes()
   }
 
@@ -56,14 +55,14 @@ class NostrEmitter {
   }
 
   async connect(address, secret) {
-    /** Configure our emitter for connecting to the relay network. */
+    /** Connect our emitter to a relay and topic. */
 
-    // If provided, update the current config.
     this.address = address || this.address
-    this.secret  = secret  || this.secret
+
+    if (secret) this.secret = await sha256(secret)
 
     if (!this.address) {
-      throw new Error('Must provide url to a relay!')
+      throw new Error('Must provide a valid relay address!')
     }
 
     if (!this.secret) {
@@ -80,10 +79,12 @@ class NostrEmitter {
     this.socket.addEventListener('open', (event) => this.openHandler(event))
     this.socket.addEventListener('message', (event) => this.messageHandler(event))
 
+    // Calculate our pubkey and topic.
     this.pubkey = await schnorr.getPublicKey(this.privkey, true)
-    this.topic  = await Hash.from(this.secret, 2).toHex()
+    this.topic  = bytesToHex(await sha256(this.secret, 2))
 
     if (typeof this.pubkey !== 'string') {
+      // If the pubkey is not a string, convert it.
       this.pubkey = bytesToHex(this.pubkey)
     }
     
@@ -107,20 +108,21 @@ class NostrEmitter {
   }
 
   async fromLink(string) {
+    /** Connect to a relay using a connection string. */
     const decoded = dc.decode(b64decode(string))
     const [ secret, address ] = decoded.split('@')
     return this.connect(address, secret)
   }
 
-  decodeEvent(event) {
-    // Decode an incoming event.
+  normalizeEvent(event) {
+    /** Normalize the format of an incoming event. */
     return event instanceof Uint8Array
       ? JSON.parse(event.toString('utf8'))
       : JSON.parse(event.data)
   }
 
   async decryptContent(content) {
-    // Decrypt content of a message.
+    /** Decrypt content of a message. */
     return decrypt(content, this.secret)
       .then((data) => JSON.parse(data))
       .catch((err) => console.error(err))
@@ -135,18 +137,19 @@ class NostrEmitter {
 
   messageHandler(event) {
     /** Handle the socket message event. */
-    const [ type, subId, data ] = this.decodeEvent(event)
+    const [ type, subId, data ] = this.normalizeEvent(event)
 
     this.debug('messageEvent:', [ type, subId, data ])
 
-    // Check if event is a response to a subscription.
     if (type === 'EOSE') {
+      // If an EOSE message, mark subscription as active.
       this.subscribed = true
       this.info('Subscription Id:', this.subId)
       return
     }
 
     if (type === 'EVENT') {
+      // If an EVENT message, pass to event handler.
       this.eventHandler(data)
       return
     }
@@ -154,11 +157,10 @@ class NostrEmitter {
 
   async eventHandler(data) {
     const { content, ...metaData } = data
-
-    // Verify that the signature is valid.
     const { id, pubkey, sig } = metaData
 
     if (!schnorr.verify(sig, id, pubkey)) {
+       // Verify that the signature is valid.
       throw 'Event signature failed verification!'
     }
 
@@ -186,7 +188,7 @@ class NostrEmitter {
     const [ eventName, eventData ] = decryptedContent
 
     // Apply the event to our subscribed functions.
-    for (const fn of this._getEventListByName(eventName)) {
+    for (const fn of this._getFn(eventName)) {
       const args = [ eventData, { eventName, ...metaData }]
       fn.apply(this, args)
     }
@@ -214,8 +216,8 @@ class NostrEmitter {
   }
 
   async getSignedEvent(event) {
-    /** Produce a signed hash of our event, 
-     *  then attach it to the event object.
+    /** Create a has and signature for our 
+     *  event, then return it with the event.
      * */
     const eventData = JSON.stringify([
       0,
@@ -227,7 +229,7 @@ class NostrEmitter {
     ])
 
     // Append event ID and signature
-    event.id  = await Hash.from(eventData).toHex()
+    event.id  = bytesToHex(await sha256(eventData))
     event.sig = await schnorr.sign(event.id, this.privkey)
 
     // Verify that the signature is valid.
@@ -243,7 +245,7 @@ class NostrEmitter {
     return event
   }
 
-  _getEventListByName(eventName) {
+  _getFn(eventName) {
     /** If key undefined, create a new set for the event,
      *  else return the stored subscriber list.
      * */
@@ -255,18 +257,17 @@ class NostrEmitter {
 
   on(eventName, fn) {
     /** Subscribe function to run on a given event. */
-    this._getEventListByName(eventName).add(fn)
+    this._getFn(eventName).add(fn)
   }
 
   once(eventName, fn) {
     /** Subscribe function to run once, using
      *  a callback to cancel the subscription.
      * */
-    const self = this
 
-    const onceFn = function (...args) {
-      self.remove(eventName, onceFn)
-      fn.apply(self, args)
+    const onceFn = (...args) => {
+      this.remove(eventName, onceFn)
+      fn.apply(this, args)
     }
 
     this.on(eventName, onceFn)
@@ -291,7 +292,7 @@ class NostrEmitter {
 
   remove(eventName, fn) {
     /** Remove function from an event's subscribtion list. */
-    this._getEventListByName(eventName).delete(fn)
+    this._getFn(eventName).delete(fn)
   }
 
   close() {
@@ -302,6 +303,7 @@ class NostrEmitter {
   }
 
   shareLink() {
+    /** Create a share link. */
     const str = `${this.secret}@${this.address}`
     return b64encode(ec.encode(str))
   }
@@ -309,54 +311,21 @@ class NostrEmitter {
 
 /** Crypto library. */
 
-const Hash = class {
-  /** Digest a message with sha256, using x number of rounds. */
-  static from(data, rounds) {
-    if (!(data instanceof Uint8Array)) {
-      data = ec.encode(String(data))
-    }
-    return new Hash(data, rounds)
-  }
-
-  constructor(data, rounds = 1) {
-    if (!(data instanceof Uint8Array)) {
-      throw new Error('Must pass an Uint8Array to new Hash object!')
-    }
-    this.init   = false
-    this.data   = data
-    this.rounds = rounds
-  }
-  
-  async digest() {
-    if (!this.init) {
-      for (let i = 0; i < this.rounds; i++) {
-        this.data = await crypto.subtle.digest('SHA-256', this.data)
-      }
-      this.data = new Uint8Array(this.data)
-      this.init = true
-    }
-  }
-
-  async toHex() {
-    await this.digest()
-    return bytesToHex(this.data)
-  }
-
-  async toBytes() {
-    await this.digest()
-    return this.data
-  }
+async function sha256(data) {
+  if (typeof data === 'string') data = ec.encode(data)
+  const digest = await crypto.subtle.digest('SHA-256', data)
+  return new Uint8Array(digest)
 }
 
-const getCryptoKey = async (string) => {
+async function getCryptoKey (string) {
   /** Derive a CryptoKey object (for Webcrypto library). */
-  const secret  = await Hash.from(string).toBytes()
+  const secret  = await sha256(string)
   const options = { name: 'AES-CBC' }
   const usage   = ['encrypt', 'decrypt']
   return crypto.subtle.importKey('raw', secret, options, true, usage)
 }
 
-const encrypt = async (message, secret) => {
+async function encrypt (message, secret) {
   /** Encrypt a message using a CryptoKey object. */
   const key = await getCryptoKey(secret)
   const iv  = crypto.getRandomValues(new Uint8Array(16))
@@ -367,7 +336,7 @@ const encrypt = async (message, secret) => {
   return b64encode(new Uint8Array([...iv, ...cipherBytes]))
 }
 
-const decrypt = async (encodedText, secret) => {
+async function decrypt (encodedText, secret) {
   /** Decrypt an encrypted message using a CryptoKey object. */
   const key   = await getCryptoKey(secret)
   const bytes = b64decode(encodedText)
@@ -379,7 +348,7 @@ const decrypt = async (encodedText, secret) => {
   return dc.decode(plainText)
 }
 
-const bytesToHex = (byteArray) => {
+function bytesToHex (byteArray) {
   const arr = []; let i
   for (i = 0; i < byteArray.length; i++) {
     arr.push(byteArray[i].toString(16).padStart(2, '0'))
@@ -387,7 +356,7 @@ const bytesToHex = (byteArray) => {
   return arr.join('')
 }
 
-const hexToBytes = (str) => {
+function hexToBytes (str) {
   const arr = []; let i
   for (i = 0; i < str.length; i += 2) {
     arr.push(parseInt(str.substr(i, 2), 16))
@@ -395,11 +364,11 @@ const hexToBytes = (str) => {
   return Uint8Array.from(arr)
 }
 
-const getRandomBytes = (size = 32) => {
+function getRandomBytes (size = 32) {
   return crypto.getRandomValues(new Uint8Array(size))
 }
 
-const getRandomHex = (size = 32) => {
+function getRandomHex (size = 32) {
   return bytesToHex(getRandomBytes(size))
 }
 
