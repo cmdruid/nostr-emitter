@@ -80,7 +80,7 @@ class NostrEmitter {
     this.socket.addEventListener('open', (event) => this.openHandler(event))
     this.socket.addEventListener('message', (event) => this.messageHandler(event))
 
-    this.pubkey = bytesToHex(await schnorr.getPublicKey(this.privkey))
+    this.pubkey = await schnorr.getPublicKey(this.privkey, true)
     this.topic  = await Hash.from(this.secret, 2).toHex(),
     
     // Configure our event tags and filter.

@@ -40,10 +40,10 @@
     </div>
   </div>
   <script src='https://bundle.run/noble-secp256k1@1.2.14'></script>
-  <script src='https://unpkg.com/@cmdcode/nostr-emitter'></script>
-  <!-- <script src="../../index.js"></script> -->
+  <!-- <script src='https://unpkg.com/@cmdcode/nostr-emitter'></script> -->
+  <script src="../../index.js"></script>
   <script type="module">
-    const DEFAULT_RELAY_URL = 'wss://nostr-relay.wlvs.space'
+    const DEFAULT_RELAY_URL = 'wss://nostr.zebedee.cloud'
 
     const configForm = document.querySelector('#config'),
           msgBox     = document.querySelector('.chat-box'),
@@ -66,7 +66,7 @@
       emitter.opt.selfsub = true
 
       emitter.on('chatmsg', (event, meta) => {
-        const name = (meta.pubkey === emitter.keys.pub)
+        const name = (meta.pubkey === emitter.pubkey)
           ? 'me'
           : meta.pubkey.slice(-6)
         post(name, event.data)
