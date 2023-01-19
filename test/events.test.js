@@ -3,7 +3,7 @@ const NostrEmitter = require('../index.js')
 
 const sleep = ms => new Promise(done => setTimeout(done, ms || 1000))
 
-const emitter = new NostrEmitter({ selfsub: true })
+const emitter = new NostrEmitter({ selfsub: true, verbose : true  })
 
 test('Event Registration', async t => {
   await emitter.connect('wss://nostr.zebedee.cloud', 'secret-string')
