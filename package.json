@@ -1,0 +1,35 @@
+{
+  "name": "@cmdcode/nostr-emitter",
+  "version": "2.0.2",
+  "description": "A simple event emitter, powered by Nostr.",
+  "main": "index.js",
+  "scripts": {
+    "test": "tape test/*.js"
+  },
+  "keywords": [
+    "event",
+    "emitter",
+    "pub",
+    "sub",
+    "nostr"
+  ],
+  "author": "Christopher Scott",
+  "license": "CC-BY-1.0",
+  "repository": "https://github.com/cmdruid/nostr-emitter.git",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org",
+    "access": "public"
+  },
+  "dependencies": {
+    "@noble/secp256k1": "^1.2.14",
+    "ws": "^8.9.0"
+  },
+  "files": [
+    "index.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "devDependencies": {
+    "tape": "^5.6.1"
+  }
+}
