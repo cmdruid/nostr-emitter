@@ -128,7 +128,7 @@ client.on('error', console.log) // For caught exceptions.
 client.on('debug', console.log) // For debug output.
 ```
 
-## How it works
+## How it Works
 
 The client works as typical nostr client. You can send messages to relays, publish events, and subscribe to event filters.
 
@@ -139,14 +139,22 @@ Some helpful tips:
 * When sendind a topic event, you can provide a custom event template.
 * You can use `topic.sub.on('event')` to listen to all events for a topic.
 
+## Bugs / Suggestions
+
+Please submit an issue ticket if you have any comments or suggestions.
+
+## Contributions
+
+This is a free and open-source project. All contributions are welcome!
+
 ## Resources
 
 **Noble-secp256k1 Library**  
 Used for identity and signing events.  
 https://github.com/paulmillr/noble-secp256k1
 
-**Websockets** (nodejs only)  
-Used for communicating over a websocket.  
+**ws** (nodejs only)  
+Used for websockets in node-js.  
 https://github.com/websockets/ws
 
 **Nostr Implementation Possibilities**  
@@ -155,9 +163,7 @@ https://github.com/nostr-protocol/nips
 **Nostr-tools**  
 https://github.com/fiatjaf/nostr-tools
 
-## Contributions
-All contributions are welcome!
-
 ## Special Thanks
+
 Special thanks to supertestnet for his help and guidance.  
 https://github.com/supertestnet
