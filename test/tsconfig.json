@@ -1,28 +1,17 @@
 {
-  "ts-node": {
-    "transpileOnly": true,
-    "files": true,
-    "esm": true,
-    "compilerOptions": {
-      "module": "ES2022"
-    },
-    "include": ["test/**/*.test.ts"],
-    "experimentalSpecifierResolution": "node"
-  },
   "compilerOptions": {
     /* Visit https://aka.ms/tsconfig to read more about this file */
     "module": "ES2022",
     "target": "ES2022",
     "moduleResolution": "Node",
-    "baseUrl": "src",
+    "baseUrl": "../src",
     "paths": {
       "@/*": ["./*"]
     },
-    "rootDir": "./src",
-    "outDir": "./dist",
+    "rootDir": "../",
     "sourceMap": true,
     "declaration": true,
-    "declarationDir": "./dist/types",
+    "declarationDir": "../dist/types",
     "declarationMap": true,
     "emitDeclarationOnly": true,
     "importHelpers": true,
@@ -45,5 +34,5 @@
     "experimentalDecorators": true
   },
   "exclude": ["node_modules"],
-  "include": ["src/**/*.ts"]
+  "include": ["**/*.ts"]
 }

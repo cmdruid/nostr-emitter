@@ -1,5 +1,5 @@
-import { Hash } from './hash.js'
-import { Base64, Hex, Text } from './format.js'
+import { Hash }              from '@/class/hash'
+import { Base64, Hex, Text } from '@/lib/format'
 
 const crypto = globalThis.crypto
 
@@ -19,8 +19,7 @@ async function encrypt (
   message : string,
   secret  : string | Uint8Array
 ) : Promise<string> {
-  /** Encrypt a message using a secret cipher.
-   * */
+  /** Encrypt a message using a secret cipher. */
   const payload = Text.encode(message)
   const vector  = crypto.getRandomValues(new Uint8Array(16))
   const cipher  = await importKey(secret)
@@ -35,8 +34,7 @@ async function decrypt (
   message : string,
   secret  : string | Uint8Array
 ) : Promise<string> {
-  /** Decrypt an encrypted message using a CryptoKey object.
-   * */
+  /** Decrypt an encrypted message using a CryptoKey object. */
   const buffer  = Base64.decode(message)
   const cipher  = await importKey(secret)
   const options = { name: 'AES-CBC', iv: buffer.slice(0, 16) }

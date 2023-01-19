@@ -6,10 +6,18 @@
  *
  * */
 
-type TransformReturn<T> = (data : T, err ?: errorHandler) => Promise<TransformOutput<T>>
+type TransformReturn<T, C> = (
+  data    : T,
+  context : C,
+  err    ?: errorHandler
+) => Promise<TransformOutput<T>>
 
-export type Middleware<T> = (input : T) => Promise<T | null> | T | null
-export type errorHandler  = (...args : unknown[]) => void
+export type Middleware<T, C> = (
+  input   : T, 
+  context : C
+) => Promise<T | null> | T | null
+
+export type errorHandler = (...args : unknown[]) => void
 
 export interface TransformOutput<T> {
   ok   : boolean
@@ -17,20 +25,23 @@ export interface TransformOutput<T> {
   data : T
 }
 
-export class Transformer<T> extends Array<Middleware<T>> {
-  public catcher : errorHandler | undefined
-
-  constructor (...fn : Array<Middleware<T>>) {
-    super(...fn)
+export class Transformer<T, C> {
+  public readonly context : C
+  public readonly methods : Array<Middleware<T, C>>
+  public catcher ?: errorHandler
+  
+  constructor (context : C) {
+    this.context = context
+    this.methods = []
     this.catcher = undefined
   }
 
-  public use (...fn : Array<Middleware<T>>) : number {
-    return this.push(...fn)
+  public use (...fn : Array<Middleware<T, C>>) : number {
+    return this.methods.push(...fn)
   }
 
   public async apply (data : T) : Promise<TransformOutput<T>> {
-      return pipe(...this)(data, this.catcher)
+    return pipe(...this.methods)(data, this.context, this.catcher)
   }
 
   public catch (catcher : errorHandler) : void {
@@ -38,9 +49,9 @@ export class Transformer<T> extends Array<Middleware<T>> {
   }
 }
 
-export function pipe<T> (
-  ...fns : Array<Middleware<T>>
-) : TransformReturn<T> {
+export function pipe<T, C> (
+  ...fns : Array<Middleware<T, C>>
+) : TransformReturn<T, C> {
   /**
    * Transform an input by piping it through
    * various methods. Includes type-guarding
@@ -48,6 +59,7 @@ export function pipe<T> (
    */
   return async (
     input    : T,
+    context  : C,
     catcher ?: errorHandler
   ) => {
     // Define our outer state.
@@ -58,7 +70,7 @@ export function pipe<T> (
       // Attempt to resolve the method.
       try {
         // Pipe output back into input.
-        ret = await fn(data)
+        ret = await fn(data, context)
         if (ret === null) {
           return { data, err, ok: false }
         }
@@ -66,7 +78,7 @@ export function pipe<T> (
         // Something blew up.
         if (catcher !== undefined) {
           // Run error through the catcher.
-          catcher(error, data)
+          catcher(error, data, context)
         }
         // If catcher didn't throw,
         // log error and continue.

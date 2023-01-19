@@ -1,17 +1,20 @@
-import { NostrClient } from './client.js'
-import { KeyPair }     from './keypair.js'
-import { Event, Json, Tag } from './types.js'
+import { NostrClient }      from '@/class/client'
+import { KeyPair }          from '@/class/keypair'
+import { Text } from '@/lib/format'
+import { Event, Json, Tag } from '@/schema/types'
 
-export class SignedEvent<T = Json> implements Event<T> {
-  public readonly event  : Event<T>
+export class SignedEvent implements Event {
+  public readonly event  : Event
   public readonly client : NostrClient
 
   constructor (
-    event  : Event<T>,
+    event  : Event | SignedEvent,
     client : NostrClient
   ) {
-    this.event  = event
     this.client = client
+    this.event  = (event instanceof SignedEvent)
+      ? event.toJSON()
+      : event 
   }
 
   public get isAuthor () : boolean {
@@ -22,11 +25,8 @@ export class SignedEvent<T = Json> implements Event<T> {
     return KeyPair.verify(this.sig, this.id, this.pubkey)
   }
 
-  public get isEncoded () : boolean {
-    return (
-      typeof this.content === 'string' &&
-      this.content.search(/^[a-zA-Z0-9+/]+={0,2}$/) === 0
-    )
+  public get isJSON() : boolean {
+    return Text.isJSON(this.event.content as string)
   }
 
   public get id () : string {
@@ -49,8 +49,10 @@ export class SignedEvent<T = Json> implements Event<T> {
     return this.event.subject
   }
 
-  public get content () : T {
-    return this.event.content
+  public get content () : Json {
+    return (this.isJSON)
+      ? JSON.parse(this.event.content as string)
+      : this.event.content
   }
 
   public get sig () : string {
@@ -73,7 +75,7 @@ export class SignedEvent<T = Json> implements Event<T> {
       .map(t => t.slice(1))
   }
 
-  public toJSON () : Event<T> {
+  public toJSON () : Event {
     return this.event
   }
 }

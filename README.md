@@ -30,87 +30,114 @@ import { NostrClient } from '@cmdcode/nostr-emitter'
 To get started, we will first configure a client.
 
 ```ts
-// Import the client and Keypair utility.
-import { NostrClient, KeyPair } from '../src/index.js'
+// Creating a new client is very simple.
+const client = new NostrClient({ selfsub: true })
 
-// Example of importing a keypair from a simple passphrase. 
-// There are many key import options available.
-const { prvkey, pubkey } = KeyPair.fromSecret('hunter2')
+// You can change the private key of the client at any time.
+client.prvkey = '168b760cee3ce1c768d39bf133bf5a9e030f47670b6fbf9211a8bb278f4b4f69'
 
-// Optional: We can define a type for our event!
-type Greeting = { name : string, location  : string }
+// Or import a key from a seed phrase at any time.
+await client.importSeed('secretpassphrase')
 
-// Optional: Self-published events are filtered out 
-// by default. Let's enable them for demonstration.
-const config = { selfsub: true }
-
-// Now we can create a type-safe nostr client.
-const client = new NostrClient<Greeting>(prvkey, config)
-
-client.on('ready', (emitter) => {
-  // The ready event is emitted by the client once
-  // it is connected and subscribed to a relay.
-
-  console.log('Connected to ' + emitter.client.address)
-
-  // The ready event will also pass down an emitter object
-  // to use for broadcasting and listening to subscribed events.
-
-  // Example of listening for an event.
-  emitter.on('helloEvent', (data, event) => {
-    console.log(`Hello from ${data.name} in ${data.location}!`)
-    console.log(`Sent from pubkey: ${event.pubkey}`)
-  })
+client.on('ready', (client) => {
+  // The ready event is emitted by a client 
+  // once it has connected to a relay.
+  console.log('Connected to ' + client.address)
 })
 ```
-
-Once we have the client configured, it's easy to connect and subscribe to a relay.
-
+We can use the client to create subscription that listens for events.
 ```ts
-// The address of the relay.
-const address = 'wss://relay-pub.deschooling.us'
 
-// Optional: You can provide a shared secret used to establish 
-// an encrypted channel. If none is specified, then the relay 
-// address is used as a default unencrypted channel.
-const secret = 'thisisatestpleaseignore'
+// Creating a new subscription is easy.
+const sub = client.subscribe({ 
+  kinds: [ 29002 ], 
+  since: Math.floor(Date.now() / 1000)
+})
 
-// The connect method also returns an emitter object for our events.
-const emitter = await client.connect(address, secret)
+sub.on('ready', (sub) => {
+  // Subscriptions also have a 'ready' event 
+  // for handing the flow of your application.
+  console.log('Subscribed with filter:', sub.filter)
+  // Once we are subscribed, let's publish an event.
+  client.publish({ kind: 29002, content: 'Hello, world!' })
+  // We can also easily cancel a subscription.
+  setTimeout(() => sub.cancel(), 5000)
+})
 
-// Example of relaying an event to other clients.
-emitter.relay('helloEvent', { name: 'Bob', location: 'Panama' })
+sub.on('event', (event) => {
+  // Subscriptions are simple emitter objects 
+  // that will emit 'event' and 'eose' topics.
+  console.log('New event:', event.toJSON())
+})
 ```
-
-The client is also configurable with a few options.
-
+Topics are multi-cast event channels, where each message is tagged with a topic name. When `encrypt` is enabled, the topic name is used as a seed phrase for group end-to-end encryption (a hash is derived for tagging instead).
 ```ts
-// Specify default parameters for events.
+
+// You can create an event 'channel' by specifying a topic.
+// We can also enable end-to-end encryption of all messages.
+const topic = client.topic('secretchat', { encrypt: true })
+
+topic.on('ready', (topic) => {
+  // Topics also have a 'ready' event for
+  // handing the flow of your application.
+  console.log('Subscribed with filter:', topic.sub.filter)
+  // Topics relay 
+  topic.send('hello', { name: 'Bob', planet: 'Earth' })
+})
+
+```
+Topics feature a basic JSON-RPC interface, which can be used to create a custom protocol between subscribers.
+```ts
+
+topic.on('spaceHello', (content, event) => {
+  const { name, planet } = content
+
+  console.log(`Hello ${name} from planet ${planet}!`, content)
+  console.log('Encrypted event data:', event.content)
+})
+```
+Once you have everything setup, connect to a relay.
+```ts
+// Once you are connected to a relay, 
+// the client 'ready' event will fire.
+const address1 = 'wss://f930-206-217-205-114.ngrok.io'
+await client.connect(address1)
+
+// Your client will refresh all subscriptions 
+// when ever you connect to a new relay.
+const address2 = 'wss://f930-206-217-205-114.ngrok.io'
+await client.connect(address2)
+
+// If you wish to close your current connection:
+client.close()
+```
+The main client is configurable with a few options.
+```ts
 export interface Config {
-  kind    ?: number
-  tags    ?: string[][]
-  filter  ?: Filter
-  selfsub ?: boolean
+  filter  ?: Filter      // Default filter for subcriptions.
+  kind    ?: number      // Default kind for published events.
+  tags    ?: string[][]  // Default tags for published events.
+  timeout ?: number      // The timeout (in ms) for connections.
+  selfsub ?: boolean     // Whether to show self-published events.
 }
 ```
-
+There's a few log events available for subscription.
+```ts
+client.on('info', console.log)  // For verbose output.
+client.on('error', console.log) // For caught exceptions.
+client.on('debug', console.log) // For debug output.
+```
 
 ## How it works
 
-The client works as typical nostr client. You can send messages to relays, and subscribe to message filters. When a type is provided to the client, the `content` field on event messages will be checked by typescript, and the event bus will also be type-guarded.
+The client works as typical nostr client. You can send messages to relays, publish events, and subscribe to event filters.
 
-When a shared secret is provided for encryption, a hash of the secret is used to generate the encryption key. The contents of each event are end-to-end encrypted using AES, and the event message is tagged with a hash of the encryption key. This hashtag is added to the subscription, so that each emitter will only see events tagged with the proper hash. Consider it an easy way to setup encrypted channels between emitters!
-
-Everything else works like a basic event emitter API. Methods include 'on', 'once', 'emit' (local), 'relay' (broadcast) and 'remove'.
+Clients, subscriptions and topics include a basic event emitter API. Methods include `.on()`, `.once()`, `.emit()` (local only), `.within()` (limited time) and `.remove()`.
 
 Some helpful tips:
-* For public channels, the shared secret can be something obvious, like 'general-chat'.
-* For organizing channel hierarchies, try using paths in the shared secret i.e 'secret/topic/subtopic'.
-* You can customize the default tags and filter used by the client for publishing / subscribing.
-* When sendind a message, you can provide a custom template that overrides the defaults.
-* You can use the 'any' event name to listen to all events.
-* The client emits log messages under 'info', 'debug', and 'error'.
-
+* For organizing sub-channels, try using paths in the topic name i.e 'root/topic/subtopic'.
+* When sendind a topic event, you can provide a custom event template.
+* You can use `topic.sub.on('event')` to listen to all events for a topic.
 
 ## Resources
 

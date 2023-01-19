@@ -1,4 +1,4 @@
-import { Json } from './types.js'
+import { Json } from '@/schema/types'
 
 const crypto = globalThis.crypto
 
@@ -52,7 +52,11 @@ function b64decode (
     : hexToBytes(Buffer.from(string, 'base64url').toString('utf8'))
 }
 
-export function revive<T = Json> (string : string) : T | string {
+function isJSON(string : string) : boolean {
+  try { JSON.parse(string); return true } catch { return false }
+}
+
+function revive<T = Json> (string : string) : T | string {
   try { return JSON.parse(string) } catch { return string }
 }
 
@@ -68,6 +72,7 @@ export const Hex = {
 }
 
 export const Text = {
+  isJSON,
   revive,
   encode : (str : string)     => ec.encode(str),
   decode : (raw : Uint8Array) => dc.decode(raw),

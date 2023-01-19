@@ -1,4 +1,4 @@
-import { SignedEvent } from './event.js'
+import { SignedEvent } from '@/class/event/SignedEvent'
 
 export type Tag     = string  | number | boolean
 export type Literal = string  | number | boolean | null
@@ -6,14 +6,16 @@ export type Json    = Literal | Json[] | { [key : string] : Json }
 
 export type Sorter<T> = (a : T, b : T) => number
 
-export interface Config {
+export interface ClientConfig {
   kind    ?: number
   tags    ?: string[][]
   selfsub ?: boolean
+  timeout ?: number
   filter  ?: Filter
+  privkey ?: string | Uint8Array
 }
 
-export interface Options {
+export interface ClientOptions {
   kind    : number
   tags    : string[][]
   selfsub : boolean
@@ -21,47 +23,52 @@ export interface Options {
   filter  : Filter
 }
 
-export interface Event<T = Json> {
+export interface TopicOptions {
+  filter  ?: Filter
+  encrypt ?: boolean
+}
+
+export interface Event {
   id         : string
   kind       : number
   created_at : number
   pubkey     : string
   subject   ?: string
-  content    : T
+  content    : Json
   sig        : string
   tags       : Tag[][]
 }
 
-export interface EventDraft<T> {
+export interface EventDraft {
   id         ?: string
   kind       ?: number
   created_at ?: number
   pubkey     ?: string
   subject    ?: string
-  content     : T
+  content    ?: Json
   sig        ?: string
   tags       ?: Tag[][]
 }
 
-export interface EventTemplate<T> {
+export interface EventTemplate {
   id        ?: string
   kind       : number
   created_at : number
   pubkey     : string
   subject   ?: string
-  content    : T
+  content    : Json
   sig       ?: string
   tags       : Tag[][]
 }
 
-export type EventEnvelope<T> = [
-  data : T,
-  meta : Event<T> | SignedEvent<T>
+export type EventEnvelope = [
+  data : Json,
+  meta : Event | SignedEvent
 ]
 
-export type ContentEnvelope<T> = [
+export type ContentEnvelope = [
   key  : string,
-  data : T
+  data : Json
 ]
 
 export type AckEnvelope = [
