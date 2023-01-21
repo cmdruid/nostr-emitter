@@ -50,16 +50,20 @@
           sendBox    = document.querySelector('.send-box'),
           relayAddr  = document.querySelector('input[name="relayUrl"]')
 
+    let emitter = null
+
     if (!relayAddr.getAttribute('value')) relayAddr.setAttribute('value', DEFAULT_RELAY_URL)
 
     configForm.addEventListener('submit', async (e) => {
       e.preventDefault()
 
       let { relayUrl, topic, secret } = Object.fromEntries(new FormData(e.target))
+      let initialized = emitter !== null
       
       if (!topic) topic = 'general'
 
-      const emitter = new NostrEmitter()
+      if (initialized) await emitter.close()
+      emitter = new NostrEmitter()
 
       await emitter.connect(relayUrl, topic + secret)
 
@@ -73,12 +77,14 @@
         console.log(event, meta)
       })
 
-      sendBox.addEventListener('submit', (e) => {
-        e.preventDefault()
-        const { message } = Object.fromEntries(new FormData(e.target))
-        emitter.emit('chatmsg', { data: message })
-        clearInput()
-      })
+      if (!initialized) {
+        sendBox.addEventListener('submit', (e) => {
+          e.preventDefault()
+          const { message } = Object.fromEntries(new FormData(e.target))
+          emitter.emit('chatmsg', { data: message })
+          clearInput()
+        })
+      }
     })
 
     function post(name, msg) {
