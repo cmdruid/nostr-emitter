@@ -62,7 +62,7 @@
       
       if (!topic) topic = 'general'
 
-      if (initialized) await emitter.close()
+      if (initialized) emitter.close()
       emitter = new NostrEmitter()
 
       await emitter.connect(relayUrl, topic + secret)
