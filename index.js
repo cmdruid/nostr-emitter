@@ -283,11 +283,11 @@ class NostrEmitter {
     this.on(eventName, withinFn)
   }
 
-  emit(eventName, args, eventMsg) {
+  async emit(eventName, args, eventMsg) {
     /** Emit a series of arguments for the event, and
      *  present them to each subscriber in the list.
      * */
-    this.send(eventName, args, eventMsg)
+    await this.send(eventName, args, eventMsg)
   }
 
   remove(eventName, fn) {
@@ -295,8 +295,8 @@ class NostrEmitter {
     this._getFn(eventName).delete(fn)
   }
 
-  close() {
-    this.emit('close', this.id)
+  async close() {
+    await this.emit('close', this.id)
     this.socket.close()
     this.connected = false
     this.subscribed = false
