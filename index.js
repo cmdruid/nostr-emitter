@@ -52,6 +52,7 @@ class NostrEmitter {
     /** Send a subscription message to the socket peer. */
     const subscription = ['REQ', this.subId, this.filter]
     this.socket.send(JSON.stringify(subscription))
+    this.info('Subscribed with filter:', this.filter)
   }
 
   async connect(address, secret) {
@@ -105,13 +106,6 @@ class NostrEmitter {
         } else { count++ }
       }, 500)
     })
-  }
-
-  async fromLink(string) {
-    /** Connect to a relay using a connection string. */
-    const decoded = dc.decode(b64decode(string))
-    const [ secret, address ] = decoded.split('@')
-    return this.connect(address, secret)
   }
 
   normalizeEvent(event) {
@@ -300,12 +294,6 @@ class NostrEmitter {
     this.socket.close()
     this.connected = false
     this.subscribed = false
-  }
-
-  shareLink() {
-    /** Create a share link. */
-    const str = `${this.secret}@${this.address}`
-    return b64encode(ec.encode(str))
   }
 }
 
