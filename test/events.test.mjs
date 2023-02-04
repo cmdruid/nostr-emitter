@@ -1,12 +1,12 @@
-const test = require('tape')
-const NostrEmitter = require('../index.js')
+import tape from 'tape'
+import NostrEmitter from '../index.js'
 
 const sleep = ms => new Promise(done => setTimeout(done, ms || 1000))
 
 const emitter = new NostrEmitter({ selfsub: true })
 
-test('Event Registration', async t => {
-  await emitter.connect('wss://nostr.zebedee.cloud', 'secret-string')
+tape('Event Registration', async t => {
+  await emitter.connect('wss://relay.nostrich.de', 'secret-string')
 
   try {
     t.test('onTest', t => onTest(t, emitter), 'Test .on()')

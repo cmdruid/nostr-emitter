@@ -4,7 +4,7 @@
   "description": "A simple event emitter, powered by Nostr.",
   "main": "index.js",
   "scripts": {
-    "test": "tape test/*.js"
+    "test": "tape test/*.mjs"
   },
   "keywords": [
     "event",
@@ -21,8 +21,8 @@
     "access": "public"
   },
   "dependencies": {
-    "@noble/secp256k1": "^1.2.14",
-    "ws": "^8.9.0"
+    "@noble/secp256k1": "^1.7.1",
+    "ws": "^8.12.0"
   },
   "files": [
     "index.js",
