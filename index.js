@@ -131,7 +131,7 @@ class NostrEmitter {
   async openHandler(_event) {
     /** Handle the socket open event. */
     this.info('Socket connected to: ', this.address)
-    if (!this.subscribed) this.subscribe()
+    this.subscribe()
   }
 
   messageHandler(event) {
