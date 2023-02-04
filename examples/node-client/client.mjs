@@ -12,7 +12,7 @@ const emitter = new NostrEmitter()
 
 emitter.on('ping', data => {
   console.log('Received:', data)
-  emitter.emit('pong', 'pong!')
+  emitter.publish('pong', 'pong!')
 })
 
 emitter.on('pong', data => {
@@ -23,5 +23,5 @@ await emitter.connect('wss://' + relayUrl, secret)
 
 setInterval(() => {
   console.log('Sending ping ...')
-  emitter.emit('ping', 'ping!')
+  emitter.publish('ping', 'ping!')
 }, 5000)

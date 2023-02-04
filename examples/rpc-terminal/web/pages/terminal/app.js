@@ -46,8 +46,8 @@ await connect()
 
 async function connect() {
   const connectStr = localStorage.getItem('connectString')
-  const [ relayUrl, secret ] = atob(connectStr).split(':')
-  emitter.connect('wss://' + relayUrl, secret)
+  const [ secret, address ] = connectStr.split('@')
+  emitter.connect(address, secret)
 }
 
 function sendCommand(str) {
@@ -63,7 +63,7 @@ function sendCommand(str) {
     termWindow.scrollTo({ top: 0 })
   })
   /* Send the command and reset our command line. */
-  emitter.emit('call', [ command, ... args ])
+  emitter.publish('call', [ command, ... args ])
   inputField.value = ""
   inputField.style.width = 0
 }

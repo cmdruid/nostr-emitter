@@ -12,7 +12,7 @@ emitter.on('getinfo', async () => {
     const balance = await rpc('getbalance'),
           blockct = await rpc('getblockcount')
     const { chain } = await rpc('getblockchaininfo')
-    emitter.emit('nodeinfo', { balance, blockct, chain })
+    emitter.publish('nodeinfo', { balance, blockct, chain })
   } catch(err) { errorHandler(err) }
 })
 
@@ -21,15 +21,15 @@ emitter.on('call', async data => {
   try {
     const [ method, ...params ] = data
     const result = await rpc(method, params)
-    emitter.emit('response', result)
+    emitter.publish('response', result)
   } catch (err) { errorHandler(err) }
 })
 
 function errorHandler(err) {
   console.error(err)
-  emitter.emit('error', err.toString())
+  emitter.publish('error', err.toString())
 }
 
 await emitter.connect('wss://' + relayUrl, secret)
 
-console.log(`Paste this connection string into your web app:\n\n${ emitter.shareLink() }\n`)
+console.log(`Paste this connection string into your web app:\n\n${secret}@${emitter.address}\n`)

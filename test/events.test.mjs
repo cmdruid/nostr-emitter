@@ -24,7 +24,7 @@ async function onTest(t, emitter) {
   let state = null
   t.plan(1)
   emitter.on('onTest', data => state = data)
-  emitter.emit('onTest', 'pass 1')
+  emitter.publish('onTest', 'pass 1')
   await sleep(1000)
   t.equal('pass 1', state, 'should update the state.')
 }
@@ -36,11 +36,11 @@ async function onceTest(t, emitter) {
 
   emitter.once('onceTest', data => state = data)
 
-  emitter.emit('onceTest', 'pass 1')
+  emitter.publish('onceTest', 'pass 1')
   await sleep(1000)
   t.equal('pass 1', state, 'should update the state.')
 
-  emitter.emit('onceTest', 'pass 2')
+  emitter.publish('onceTest', 'pass 2')
   await sleep(1000)
   t.notEqual('pass 2', state, 'should fail to update the state.')
 }
@@ -52,15 +52,15 @@ async function withinTest(t, emitter) {
 
   emitter.within('withinTest', (data) => state = data, 2000)
 
-  emitter.emit('withinTest', 'pass 1')
+  emitter.publish('withinTest', 'pass 1')
   await sleep(1000)
   t.equal('pass 1', state, 'should update, is within the timeout')
 
-  emitter.emit('withinTest', 'pass 2')
+  emitter.publish('withinTest', 'pass 2')
   await sleep(1000)
   t.equal('pass 2', state, 'should update, is within the timeout')
 
-  emitter.emit('withinTest', 'pass 3')
+  emitter.publish('withinTest', 'pass 3')
   await sleep(1000)
   t.notEqual('pass 3', state, 'should fail to update, is outside the timeout')
 }
