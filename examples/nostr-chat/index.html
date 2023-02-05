@@ -76,7 +76,7 @@
       sendBox.addEventListener('submit', (e) => {
         e.preventDefault()
         const { message } = Object.fromEntries(new FormData(e.target))
-        emitter.emit('chatmsg', { data: message })
+        emitter.publish('chatmsg', { data: message })
         clearInput()
       })
     })

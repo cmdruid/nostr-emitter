@@ -94,8 +94,8 @@ class NostrEmitter {
       }
       
       // Configure our event tags and filter.
-      this.tags.push([ 't', this.topic ])
-      this.filter['#t'] = [ this.topic ]
+      this.tags.push([ 'h', this.topic ])
+      this.filter['#h'] = [ this.topic ]
     }
 
     if (this.connected && this.subscribed) return
@@ -179,7 +179,7 @@ class NostrEmitter {
     if (!decryptedContent) {
       return this.emit('destroy', null, {
         kind: 5,
-        tags: [[ 's', metaData.id ]]
+        tags: [[ 'e', metaData.id ]]
       })
     }
 
